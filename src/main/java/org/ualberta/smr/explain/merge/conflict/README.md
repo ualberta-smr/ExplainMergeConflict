@@ -1,0 +1,1 @@
+Explain Merge Conflict is a work-in-progress plugin that expands on RefactorInsight and IntelliJ's git plugin, with the goal of improving the merge conflict resolution experience. This research is currently ongoing at [UAlberta SMR research group](https://sarahnadi.org/smr/) - supervised by Dr. Sarah Nadi - at the University of Alberta.
