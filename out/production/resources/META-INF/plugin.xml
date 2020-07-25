@@ -1,0 +1,74 @@
+<idea-plugin url="https://github.com/ualberta-smr/ExplainMergeConflict">
+    <id>org.ualberta.smr.explainmergeconflict</id>
+    <name>ExplainMergeConflict</name>
+    <vendor
+            url="https://github.com/ualberta-smr/ExplainMergeConflict">The
+        Software Maintenance and Reuse (SMR) Lab
+    </vendor>
+    <version>2020.1-1.1</version>
+
+    <description><![CDATA[
+
+      ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectConfigurable parentId="tools"
+                             instance="org.jetbrains.research.refactorinsight.services.SettingsConfigurable"
+                             id="services.SettingsConfigurable"
+                             displayName="RefactorInsight"/>
+
+        <diff.DiffExtension implementation="org.jetbrains.research.refactorinsight.ui.windows.DiffWindow"/>
+
+        <projectService serviceImplementation="org.jetbrains.research.refactorinsight.services.MiningService"/>
+        <projectService serviceImplementation="org.jetbrains.research.refactorinsight.services.WindowService"/>
+        <projectService serviceImplementation="org.jetbrains.research.refactorinsight.services.SettingsState"/>
+
+        <errorHandler implementation="org.jetbrains.research.refactorinsight.reporter.RefactorInsightErrorReporter"/>
+
+        <toolWindow id="Explain Merge Conflict" anchor="right"
+                    factoryClass="org.ualberta.smr.explainmergeconflict.ui.ExplanationsToolWindowFactory"/>
+    </extensions>
+
+    <actions>
+        <action id="actions.ToggleRefactoringViewAction"
+                class="org.jetbrains.research.refactorinsight.actions.ToggleRefactoringViewAction"
+                icon="RefactorInsightIcons.toggle"
+                text="Show Refactorings" description="actions.ToggleRefactoringViewAction">
+            <add-to-group group-id="Vcs.Log.ChangesBrowser.Toolbar" anchor="first"/>
+        </action>
+
+        <action id="RefAction" class="org.jetbrains.research.refactorinsight.actions.RefactoringAction"
+                text="Mine All Refactorings"
+                description="Clear refactoring cache">
+            <add-to-group group-id="ToolsMenu" anchor="first"/>
+        </action>
+
+        <action id="actions.RefactoringHistoryAction"
+                class="org.jetbrains.research.refactorinsight.actions.RefactoringHistoryAction"
+                text="Check Refactoring History"
+                description="Retrieve refactorings history for this method">
+            <add-to-group group-id="EditorPopupMenu1" anchor="first"/>
+            <keyboard-shortcut first-keystroke="control alt R" keymap="$default"/>
+        </action>
+
+        <action id="ShowExplanationsToolWindowAction"
+                class="org.ualberta.smr.explainmergeconflict.actions.ShowExplanationsToolWindowAction"
+                text="Explain Merge Conflict"
+                description="Display merge conflict explanations for this file">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+
+    <projectListeners>
+        <listener class="org.jetbrains.research.refactorinsight.processors.CommitListener"
+                  topic="git4idea.repo.GitRepositoryChangeListener"/>
+        <listener class="org.jetbrains.research.refactorinsight.processors.ProjectListener"
+                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
+    </projectListeners>
+
+</idea-plugin>
