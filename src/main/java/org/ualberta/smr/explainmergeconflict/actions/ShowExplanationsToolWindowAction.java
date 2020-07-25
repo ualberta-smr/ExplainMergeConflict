@@ -36,6 +36,7 @@ public class ShowExplanationsToolWindowAction extends AnAction {
                 .getConflicts()
                 .isEmpty()) {
             showPopup(e.getDataContext());
+            return;
         }
 
         ToolWindow toolWindow  = ToolWindowManager.getInstance(project)
