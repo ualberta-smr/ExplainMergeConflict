@@ -7,6 +7,8 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
 import com.sun.istack.NotNull;
@@ -35,6 +37,13 @@ public class ShowExplanationsToolWindowAction extends AnAction {
                 .isEmpty()) {
             showPopup(e.getDataContext());
         }
+
+        ToolWindow toolWindow  = ToolWindowManager.getInstance(project)
+                .getToolWindow(
+                        ExplainMergeConflictBundle.message("toolwindow.id")
+                );
+        assert toolWindow != null;
+        toolWindow.show();
     }
 
     // Reference: RefactoringHistoryToolbar.java
