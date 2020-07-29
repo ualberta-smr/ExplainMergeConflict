@@ -3,10 +3,8 @@ package org.ualberta.smr.explainmergeconflict.actions;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.components.JBLabel;
@@ -19,25 +17,25 @@ import org.ualberta.smr.explainmergeconflict.utils.Utils;
 import java.awt.GridLayout;
 
 public class ShowExplanationsToolWindowAction extends AnAction {
-
     @Override
     public void update(AnActionEvent e) {
-        // TODO
+        if (e.getProject() != null) {
+            boolean shouldActionBeVisible =
+                    Utils.isInGitRepository(e.getProject());
+            e.getPresentation().setVisible(shouldActionBeVisible);
+        }
     }
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        assert project != null;
-
-        GitRepository repo = Utils.getCurrentRepository(project);
+        GitRepository repo = Utils.getCurrentRepository(e.getProject());
 
         if (Utils.isInConflictState(repo)) {
             showPopup(e.getDataContext());
             return;
         }
 
-        ToolWindow toolWindow  = ToolWindowManager.getInstance(project)
+        ToolWindow toolWindow  = ToolWindowManager.getInstance(e.getProject())
                 .getToolWindow(
                         ExplainMergeConflictBundle.message("toolwindow.id")
                 );

@@ -26,11 +26,21 @@ public class Utils {
     }
 
     /**
+     * Returns true if Git is running and a repository exists.
+     * @param project the current project
+     * @return boolean true if git repository; otherwise false
+     */
+    public static boolean isInGitRepository(Project project) {
+        return !GitRepositoryManager.getInstance(project).getRepositories().isEmpty();
+    }
+
+    /**
      * Returns current repository instance.
      * @param project current project open in IntelliJ
      * @return current repository
      */
     public static GitRepository getCurrentRepository(Project project) {
+        // FIXME run this assertion in another function
         assert !GitRepositoryManager.getInstance(project)
                 .getRepositories()
                 .isEmpty();
@@ -48,13 +58,8 @@ public class Utils {
         h.addParameters(headOrMergeHead);
         h.endOptions();
 
-        final String output =
-                Git.getInstance().runCommand(h).getOutputOrThrow();
-
-        return output;
+        return Git.getInstance().runCommand(h).getOutputOrThrow();
     }
-
-    // TODO - utils to see if git repository exists
 
     /**
      * Returns an instance of the currently viewed file in the code editor.
