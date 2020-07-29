@@ -5,11 +5,25 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
+import git4idea.commands.Git;
+import git4idea.commands.GitCommand;
+import git4idea.commands.GitLineHandler;
 import git4idea.repo.GitRepository;
 import git4idea.repo.GitRepositoryManager;
 
 public class Utils {
+
+    /**
+     * Returns true if a conflict is raised and a repository is in a conflict
+     * state.
+     * @param repo the current repository
+     * @return boolean true if conflicts exist; otherwise false
+     */
+    public static boolean isInConflictState(GitRepository repo) {
+        return !repo.getConflictsHolder().getConflicts().isEmpty();
+    }
 
     /**
      * Returns current repository instance.
@@ -24,6 +38,23 @@ public class Utils {
                 .getRepositories()
                 .get(0);
     }
+
+    public static String getRevisionShortAsString(Project project,
+                                                    GitRepository repo,
+                                                    String headOrMergeHead) throws VcsException {
+        GitLineHandler h = new GitLineHandler(project, repo.getRoot(),
+                GitCommand.REV_PARSE);
+        h.addParameters("--short");
+        h.addParameters(headOrMergeHead);
+        h.endOptions();
+
+        final String output =
+                Git.getInstance().runCommand(h).getOutputOrThrow();
+
+        return output;
+    }
+
+    // TODO - utils to see if git repository exists
 
     /**
      * Returns an instance of the currently viewed file in the code editor.

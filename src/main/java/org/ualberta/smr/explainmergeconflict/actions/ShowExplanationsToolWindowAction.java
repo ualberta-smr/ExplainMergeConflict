@@ -32,9 +32,7 @@ public class ShowExplanationsToolWindowAction extends AnAction {
 
         GitRepository repo = Utils.getCurrentRepository(project);
 
-        if (repo.getConflictsHolder()
-                .getConflicts()
-                .isEmpty()) {
+        if (Utils.isInConflictState(repo)) {
             showPopup(e.getDataContext());
             return;
         }
