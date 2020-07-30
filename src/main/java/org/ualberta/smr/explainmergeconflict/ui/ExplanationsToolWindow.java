@@ -6,10 +6,6 @@ import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowAnchor;
-import com.intellij.openapi.wm.ToolWindowManager;
-import com.sun.istack.NotNull;
-import git4idea.repo.GitConflictsHolder;
 import git4idea.repo.GitRepository;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
@@ -41,8 +37,6 @@ public class ExplanationsToolWindow implements DumbAware {
     }
 
     private void initializeToolWindow() {
-        // FIXME - do not initialize plugin if no repo or no file upon
-        //  initialization
         updateUIIfMergeConflictState();
 //        updateBackgroundColors();
 

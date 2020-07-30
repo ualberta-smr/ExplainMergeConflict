@@ -3,7 +3,6 @@ package org.ualberta.smr.explainmergeconflict.actions;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.ui.components.JBLabel;
@@ -19,15 +18,10 @@ import java.awt.GridLayout;
 public class ShowExplanationsToolWindowAction extends AnAction {
     @Override
     public void update(AnActionEvent e) {
-        Project project = e.getProject();
-        if (e.getProject() != null) {
-            GitRepository repo = Utils.getCurrentRepository(project);
-            boolean isInGit = Utils.isInGitRepository(project);
-            boolean isInConflict = Utils.isInConflictState(repo);
-            boolean shouldActionBeVisible = isInGit && isInConflict;
-            e.getPresentation().setVisible(shouldActionBeVisible);
+        GitRepository repo = Utils.getCurrentRepository(e.getProject());
+        e.getPresentation().setVisible(repo != null && Utils.isInConflictState(repo));
+
 //            System.out.println(e.getDataContext());
-        }
     }
 
     @Override

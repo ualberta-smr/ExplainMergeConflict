@@ -32,7 +32,10 @@ public class UIController {
 
     public static void updateToolWindowAfterNonConflictState(GitRepository repo) {
         assert !Utils.isInConflictState(repo);
-        if (manager.getToolWindow(
+        // If manager is null, this means that the update function for non
+        // conflict state was called outside of a context menu action.
+        // Ex. initializing git for a project.
+        if (manager != null && manager.getToolWindow(
                 ExplainMergeConflictBundle.message("toolwindow.id")) != null) {
             unregisterToolWindow();
         }

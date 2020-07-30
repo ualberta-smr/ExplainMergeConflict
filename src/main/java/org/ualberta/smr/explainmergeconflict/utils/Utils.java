@@ -40,10 +40,9 @@ public class Utils {
      * @return current repository
      */
     public static GitRepository getCurrentRepository(Project project) {
-        // FIXME run this assertion in another function
-        assert !GitRepositoryManager.getInstance(project)
-                .getRepositories()
-                .isEmpty();
+        if (!isInGitRepository(project)) {
+            return null;
+        }
         return GitRepositoryManager.getInstance(project)
                 .getRepositories()
                 .get(0);
