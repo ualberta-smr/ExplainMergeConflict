@@ -1,8 +1,5 @@
 package org.ualberta.smr.explainmergeconflict.processors;
 
-import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowAnchor;
-import com.intellij.openapi.wm.ToolWindowManager;
 import git4idea.repo.GitConflictsHolder;
 import git4idea.repo.GitRepository;
 import org.jetbrains.annotations.NotNull;
@@ -21,11 +18,11 @@ public class ConflictStateListener implements GitConflictsHolder.ConflictsListen
         System.out.println("Conflict change listener triggered from " +
                 "ConflictStateListener service");
 
-        if (Utils.isInConflictState(repository)) {
-            System.out.println("Conflicts detected");
-        } else {
+        if (!Utils.isInConflictState(repository)) {
             System.out.println("No conflicts detected");
-            UIController.updateToolWindow(repository);
+            UIController.updateToolWindowAfterNonConflictState(repository);
+        } else {
+            System.out.println("Conflicts detected");
         }
     }
 }

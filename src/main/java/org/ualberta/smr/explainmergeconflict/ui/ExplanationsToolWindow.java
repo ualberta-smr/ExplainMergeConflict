@@ -2,6 +2,7 @@ package org.ualberta.smr.explainmergeconflict.ui;
 
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
+import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
@@ -14,7 +15,7 @@ import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import javax.swing.*;
 
-public class ExplanationsToolWindow {
+public class ExplanationsToolWindow implements DumbAware {
     private Project project;
     private ToolWindow toolWindow;
     private GitRepository repo;
@@ -45,6 +46,7 @@ public class ExplanationsToolWindow {
         updateUIIfMergeConflictState();
 //        updateBackgroundColors();
 
+        // TODO - register as plugin listener in plugin.xml
         // reference https://intellij-support.jetbrains.com/hc/en-us/community/posts/206762535-Action-to-trigger-on-currently-selected-file-change
         // Borrowed from VcsLogTabsWatcher.java
         project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new PluginEditorManagerListener() {
@@ -56,12 +58,6 @@ public class ExplanationsToolWindow {
                 }
             }
         });
-
-//        // Borrowed from GitConflictsToolWindowManager.java
-//        project.getMessageBus().connect().subscribe(GitConflictsHolder.CONFLICTS_CHANGE, repository -> {
-//            System.out.println("Conflict change listener triggered");
-//            updateUIIfMergeConflictState();
-//        });
     }
 
     private void updateUIIfMergeConflictState() {

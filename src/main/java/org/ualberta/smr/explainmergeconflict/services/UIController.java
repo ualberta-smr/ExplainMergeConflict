@@ -14,22 +14,41 @@ import org.ualberta.smr.explainmergeconflict.utils.Utils;
 public class UIController {
     static ToolWindowManager manager;
 
-    public static void updateToolWindow(GitRepository repo) {
+    public static void updateToolWindowAfterAction(GitRepository repo) {
+        assert Utils.isInConflictState(repo);
+
         Project project = repo.getProject();
         manager = ToolWindowManager.getInstance(project);
         ToolWindow toolWindow = manager.getToolWindow(
                 ExplainMergeConflictBundle.message("toolwindow" +
                         ".id"));
 
-        if (!Utils.isInConflictState(repo) && toolWindow != null) {
-            unregisterToolWindow(project);
-        } else if (Utils.isInConflictState(repo) && toolWindow != null) {
-            toolWindow.show();
+        if (toolWindow != null) {
+            displayToolWindow();
         } else {
-            // If we reach conflict state without tool window initialized
-            // register and show it
             registerAndDisplayToolWindow(repo);
         }
+    }
+
+    public static void updateToolWindowAfterNonConflictState(GitRepository repo) {
+        assert !Utils.isInConflictState(repo);
+        if (manager.getToolWindow(
+                ExplainMergeConflictBundle.message("toolwindow.id")) != null) {
+            unregisterToolWindow();
+        }
+    }
+
+    private static void displayToolWindow() {
+        ApplicationManager.getApplication().invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                ToolWindow toolWindow =
+                        manager.getToolWindow(
+                                ExplainMergeConflictBundle.message(
+                                        "toolwindow.id"));
+                toolWindow.show();
+            }
+        });
     }
 
     private static void registerAndDisplayToolWindow(GitRepository repo) {
@@ -65,7 +84,7 @@ public class UIController {
         toolWindow.getContentManager().addContent(content);
     }
 
-    private static void unregisterToolWindow(Project project) {
+    private static void unregisterToolWindow() {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
             public void run() {
