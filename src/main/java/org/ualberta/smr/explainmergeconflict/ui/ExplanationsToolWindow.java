@@ -36,17 +36,7 @@ public class ExplanationsToolWindow {
         this.repo = repo;
         file = Utils.getCurrentFileFromEditor(project);
 
-//        ToolWindow toolwindow1 =
-//                ToolWindowManager.getInstance(project).getToolWindow("Explain" +
-//                        " Merge Conflict");
-        if (Utils.isInGitRepository(project)) {
-            ToolWindow toolWindow1 =
-                    ToolWindowManager.getInstance(project).registerToolWindow(
-                            "Explain Merge Conflict", true, ToolWindowAnchor.RIGHT);
-
-            initializeToolWindow();
-        }
-
+        initializeToolWindow();
     }
 
     private void initializeToolWindow() {
@@ -67,11 +57,11 @@ public class ExplanationsToolWindow {
             }
         });
 
-        // Borrowed from GitConflictsToolWindowManager.java
-        project.getMessageBus().connect().subscribe(GitConflictsHolder.CONFLICTS_CHANGE, repository -> {
-            System.out.println("Conflict change listener triggered");
-            updateUIIfMergeConflictState();
-        });
+//        // Borrowed from GitConflictsToolWindowManager.java
+//        project.getMessageBus().connect().subscribe(GitConflictsHolder.CONFLICTS_CHANGE, repository -> {
+//            System.out.println("Conflict change listener triggered");
+//            updateUIIfMergeConflictState();
+//        });
     }
 
     private void updateUIIfMergeConflictState() {
@@ -109,7 +99,7 @@ public class ExplanationsToolWindow {
         // .getGlobalScheme
     }
 
-    JPanel getContent() {
+    public JPanel getContent() {
         return explanationsToolWindowContent;
     }
 

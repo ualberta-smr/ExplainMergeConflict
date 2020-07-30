@@ -39,7 +39,10 @@ public class ShowExplanationsToolWindowAction extends AnAction {
             showPopup(e.getDataContext());
             return;
         }
-        UIController.displayToolWindow(e.getProject());
+
+        ToolWindow toolWindow =
+                ToolWindowManager.getInstance(e.getProject()).getToolWindow(ExplainMergeConflictBundle.message("toolwindow.id"));
+        UIController.updateToolWindow(repo);
     }
 
     // Reference: RefactoringHistoryToolbar.java
