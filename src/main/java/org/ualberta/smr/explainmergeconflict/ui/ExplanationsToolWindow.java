@@ -5,6 +5,8 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.openapi.wm.ToolWindowAnchor;
+import com.intellij.openapi.wm.ToolWindowManager;
 import com.sun.istack.NotNull;
 import git4idea.repo.GitConflictsHolder;
 import git4idea.repo.GitRepository;
@@ -28,14 +30,23 @@ public class ExplanationsToolWindow {
     private JLabel labelTheirs;
     private JScrollPane headerPane;
 
-    public ExplanationsToolWindow(@NotNull Project project,
-                                  @NotNull ToolWindow toolWindow) {
-        this.toolWindow = toolWindow;
+    public ExplanationsToolWindow(GitRepository repo,
+                                  Project project) {
         this.project = project;
+        this.repo = repo;
         file = Utils.getCurrentFileFromEditor(project);
-        repo = Utils.getCurrentRepository(project);
 
-        initializeToolWindow();
+//        ToolWindow toolwindow1 =
+//                ToolWindowManager.getInstance(project).getToolWindow("Explain" +
+//                        " Merge Conflict");
+        if (Utils.isInGitRepository(project)) {
+            ToolWindow toolWindow1 =
+                    ToolWindowManager.getInstance(project).registerToolWindow(
+                            "Explain Merge Conflict", true, ToolWindowAnchor.RIGHT);
+
+            initializeToolWindow();
+        }
+
     }
 
     private void initializeToolWindow() {

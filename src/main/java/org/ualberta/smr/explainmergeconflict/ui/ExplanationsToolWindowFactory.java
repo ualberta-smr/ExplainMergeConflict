@@ -10,13 +10,13 @@ import com.sun.istack.NotNull;
 
 public class ExplanationsToolWindowFactory implements ToolWindowFactory, DumbAware {
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow){
-        ExplanationsToolWindow explanationsToolWindow =
-                new ExplanationsToolWindow(project, toolWindow);
-        ContentFactory contentFactory = ContentFactory.SERVICE.getInstance();
-        Content content =
-                contentFactory.createContent(
-                        explanationsToolWindow.getContent(), null,
-                        false);
-        toolWindow.getContentManager().addContent(content);
+//        ExplanationsToolWindow explanationsToolWindow =
+//                new ExplanationsToolWindow(project, toolWindow);
+//        ContentFactory contentFactory = ContentFactory.SERVICE.getInstance();
+//        Content content =
+//                contentFactory.createContent(
+//                        explanationsToolWindow.getContent(), null,
+//                        false);
+//        toolWindow.getContentManager().addContent(content);
     }
 }
