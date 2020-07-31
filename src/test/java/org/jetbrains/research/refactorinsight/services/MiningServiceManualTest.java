@@ -65,82 +65,82 @@ public class MiningServiceManualTest extends GitSingleRepoTest {
   private final String dirPath = "src/test/testData/miningService/";
   // each dir is a new commit
   private final String[] commitDirs = {
-      "commit_2",
-      "commit_3",
-      "commit_4",
-      "commit_5",
-      "commit_6",
-      "commit_7",
-      "commit_8",
-      "commit_9",
-      "commit_10",
-      "commit_11",
-      "commit_12",
-      "commit_13",
-      "commit_14",
-      "commit_15"
+          "commit_2",
+          "commit_3",
+          "commit_4",
+          "commit_5",
+          "commit_6",
+          "commit_7",
+          "commit_8",
+          "commit_9",
+          "commit_10",
+          "commit_11",
+          "commit_12",
+          "commit_13",
+          "commit_14",
+          "commit_15"
   };
   // and any number of RefactoringInfo predicates to check in specific commit
   // must have the same length as commitDirs
   private final Matcher<RefactoringEntry>[] matches = new Matcher[] {
-      matcher(),
-      matcher(
-          ofType(PULL_UP_OPERATION),
-          ofType(PUSH_DOWN_OPERATION),
-          ofType(ADD_METHOD_ANNOTATION)
-      ),
-      matcher(
-          ofType(ADD_METHOD_ANNOTATION),
-          ofType(REMOVE_METHOD_ANNOTATION),
-          ofType(EXTRACT_OPERATION)
-      ),
-      matcher(
-          ofType(REMOVE_METHOD_ANNOTATION)
-      ),
-      matcher(
-          ofType(RENAME_METHOD),
-          ofType(EXTRACT_AND_MOVE_OPERATION)
-      ),
-      matcher(
-          ofType(RENAME_CLASS),
-          ofType(CHANGE_ATTRIBUTE_TYPE),
-          ofType(CHANGE_PARAMETER_TYPE),
-          ofType(CHANGE_RETURN_TYPE)
-      ),
-      matcher(
-          ofType(MOVE_CLASS)
-      ),
-      matcher(
-          ofType(MOVE_RENAME_CLASS),
-          ofType(MOVE_SOURCE_FOLDER)
-      ),
-      matcher(
-          ofType(RENAME_ATTRIBUTE),
-          ofType(RENAME_PACKAGE),
-          ofType(RENAME_PARAMETER)
-      ),
-      matcher(
-          ofType(PULL_UP_ATTRIBUTE)
-      ),
-      matcher(
-          ofType(PUSH_DOWN_ATTRIBUTE),
-          ofType(INLINE_VARIABLE)
-      ),
-      matcher(
-          ofType(EXTRACT_VARIABLE)
-      ),
-      matcher(
-          ofType(RENAME_VARIABLE),
-          ofType(CHANGE_PARAMETER_TYPE),
-          ofType(CHANGE_VARIABLE_TYPE),
-          ofType(MOVE_ATTRIBUTE),
-          ofType(MOVE_OPERATION),
-          ofType(MOVE_AND_RENAME_OPERATION)
-      ),
-      matcher(
-          ofType(INLINE_OPERATION),
-          ofType(EXTRACT_INTERFACE)
-      )
+          matcher(),
+          matcher(
+                  ofType(PULL_UP_OPERATION),
+                  ofType(PUSH_DOWN_OPERATION),
+                  ofType(ADD_METHOD_ANNOTATION)
+          ),
+          matcher(
+                  ofType(ADD_METHOD_ANNOTATION),
+                  ofType(REMOVE_METHOD_ANNOTATION),
+                  ofType(EXTRACT_OPERATION)
+          ),
+          matcher(
+                  ofType(REMOVE_METHOD_ANNOTATION)
+          ),
+          matcher(
+                  ofType(RENAME_METHOD),
+                  ofType(EXTRACT_AND_MOVE_OPERATION)
+          ),
+          matcher(
+                  ofType(RENAME_CLASS),
+                  ofType(CHANGE_ATTRIBUTE_TYPE),
+                  ofType(CHANGE_PARAMETER_TYPE),
+                  ofType(CHANGE_RETURN_TYPE)
+          ),
+          matcher(
+                  ofType(MOVE_CLASS)
+          ),
+          matcher(
+                  ofType(MOVE_RENAME_CLASS),
+                  ofType(MOVE_SOURCE_FOLDER)
+          ),
+          matcher(
+                  ofType(RENAME_ATTRIBUTE),
+                  ofType(RENAME_PACKAGE),
+                  ofType(RENAME_PARAMETER)
+          ),
+          matcher(
+                  ofType(PULL_UP_ATTRIBUTE)
+          ),
+          matcher(
+                  ofType(PUSH_DOWN_ATTRIBUTE),
+                  ofType(INLINE_VARIABLE)
+          ),
+          matcher(
+                  ofType(EXTRACT_VARIABLE)
+          ),
+          matcher(
+                  ofType(RENAME_VARIABLE),
+                  ofType(CHANGE_PARAMETER_TYPE),
+                  ofType(CHANGE_VARIABLE_TYPE),
+                  ofType(MOVE_ATTRIBUTE),
+                  ofType(MOVE_OPERATION),
+                  ofType(MOVE_AND_RENAME_OPERATION)
+          ),
+          matcher(
+                  ofType(INLINE_OPERATION),
+                  ofType(EXTRACT_INTERFACE)
+          )
   };
   private MyErrorCollector collector;
   private String[] hashes;
@@ -150,13 +150,13 @@ public class MiningServiceManualTest extends GitSingleRepoTest {
     super.setUp();
     assert matches.length == commitDirs.length;
     hashes = Arrays.stream(commitDirs)
-        .map(dirPath::concat)
-        .map(Paths::get)
-        .map(dir -> {
-          buildVFS(dir);
-          return GitExecutor.addCommit(repo, "test commit");
-        })
-        .toArray(String[]::new);
+            .map(dirPath::concat)
+            .map(Paths::get)
+            .map(dir -> {
+              buildVFS(dir);
+              return GitExecutor.addCommit(repo, "test commit");
+            })
+            .toArray(String[]::new);
     repo.update();
     miner = MiningService.getInstance(myProject);
     miner.mineAndWait(repo);
@@ -198,8 +198,8 @@ public class MiningServiceManualTest extends GitSingleRepoTest {
           for (int i = 0; i < children; i++) {
             Object refactoringNode = tree.getModel().getChild(root, i);
             renderer
-                .customizeCellRenderer(tree, refactoringNode, false,
-                    false, false, 1, false);
+                    .customizeCellRenderer(tree, refactoringNode, false,
+                            false, false, 1, false);
           }
 
           boolean res = true;

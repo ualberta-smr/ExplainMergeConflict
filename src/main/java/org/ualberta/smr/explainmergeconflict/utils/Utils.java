@@ -22,7 +22,7 @@ public class Utils {
      * @return boolean true if conflicts exist; otherwise false
      */
     public static boolean isInConflictState(GitRepository repo) {
-        return !repo.getConflictsHolder().getConflicts().isEmpty();
+        return !repo.getStagingAreaHolder().getAllConflicts().isEmpty();
     }
 
     /**

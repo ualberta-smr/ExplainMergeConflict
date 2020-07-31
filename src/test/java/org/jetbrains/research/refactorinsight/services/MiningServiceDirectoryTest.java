@@ -109,8 +109,8 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
 
     //cannot be mocked since its dependencies must not be null
     VcsCommitMetadataImpl vcsCommitMetadata = new VcsCommitMetadataImpl(hash,
-        parents, 0, repo.getRoot(), "subject",
-        user, "message", user, 0);
+            parents, 0, repo.getRoot(), "subject",
+            user, "message", user, 0);
 
     GitWindow gitWindow = mock(GitWindow.class);
     Mockito.doThrow(new NullPointerException()).when(gitWindow).refresh(any());
@@ -122,46 +122,46 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
     //test the main cell renderer works as expected on this map
     MainCellRenderer cellRenderer = new MainCellRenderer();
     miner.getState().refactoringsMap.map.values()
-        .forEach(x -> {
-          Tree tree1 = TreeUtils.buildTree(x.getRefactorings());
-          tree1.setCellRenderer(cellRenderer);
-          //Testing that the VCS tool tree is not null:
-          assertNotNull(tree1);
-          DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
+            .forEach(x -> {
+              Tree tree1 = TreeUtils.buildTree(x.getRefactorings());
+              tree1.setCellRenderer(cellRenderer);
+              //Testing that the VCS tool tree is not null:
+              assertNotNull(tree1);
+              DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
 
-          //for each refactoring check that the renderer works properly
-          root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
-            cellRenderer.customizeCellRenderer(tree1, node, false,
-                false, node.isLeaf(), 1, false);
-            //Testing that for node "node" the renderer works
-            assertNotNull(cellRenderer
-                .getTreeCellRendererComponent(tree1, node, false,
-                    false, node.isLeaf(), 1, false));
-          });
-        });
+              //for each refactoring check that the renderer works properly
+              root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
+                cellRenderer.customizeCellRenderer(tree1, node, false,
+                        false, node.isLeaf(), 1, false);
+                //Testing that for node "node" the renderer works
+                assertNotNull(cellRenderer
+                        .getTreeCellRendererComponent(tree1, node, false,
+                                false, node.isLeaf(), 1, false));
+              });
+            });
 
     //test the history toolbar renderer works as expected on this map
     HistoryToolbarRenderer historyToolbarRenderer = new HistoryToolbarRenderer();
     miner.getRefactoringHistory()
-        .forEach((key, refactorings) -> {
-          DefaultMutableTreeNode root = new DefaultMutableTreeNode("root");
-          for (RefactoringInfo ref : refactorings) {
-            TreeUtils.createHistoryTree(root, ref);
-          }
-          Tree tree1 = new Tree(root);
-          tree1.setCellRenderer(historyToolbarRenderer);
-          //testing that the history toolbar tree is not null
-          assertNotNull(tree1);
-          DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
-          root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
-            historyToolbarRenderer.customizeCellRenderer(tree1, node, false,
-                false, node.isLeaf(), 1, false);
-            //Testing that for node "node" the renderer works"
-            assertNotNull(historyToolbarRenderer
-                .getTreeCellRendererComponent(tree1, node, false,
-                    false, node.isLeaf(), 1, false));
-          });
-        });
+            .forEach((key, refactorings) -> {
+              DefaultMutableTreeNode root = new DefaultMutableTreeNode("root");
+              for (RefactoringInfo ref : refactorings) {
+                TreeUtils.createHistoryTree(root, ref);
+              }
+              Tree tree1 = new Tree(root);
+              tree1.setCellRenderer(historyToolbarRenderer);
+              //testing that the history toolbar tree is not null
+              assertNotNull(tree1);
+              DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
+              root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
+                historyToolbarRenderer.customizeCellRenderer(tree1, node, false,
+                        false, node.isLeaf(), 1, false);
+                //Testing that for node "node" the renderer works"
+                assertNotNull(historyToolbarRenderer
+                        .getTreeCellRendererComponent(tree1, node, false,
+                                false, node.isLeaf(), 1, false));
+              });
+            });
   }
 
   /**

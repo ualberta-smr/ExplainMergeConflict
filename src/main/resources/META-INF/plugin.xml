@@ -29,9 +29,6 @@
         <projectService serviceImplementation="org.jetbrains.research.refactorinsight.services.SettingsState"/>
 
         <errorHandler implementation="org.jetbrains.research.refactorinsight.reporter.RefactorInsightErrorReporter"/>
-
-<!--        <toolWindow id="Explain Merge Conflict" anchor="right"-->
-<!--                    factoryClass="org.ualberta.smr.explainmergeconflict.ui.ExplanationsToolWindowFactory"/>-->
     </extensions>
 
     <actions>
@@ -71,7 +68,7 @@
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
         <listener
                 class="org.ualberta.smr.explainmergeconflict.processors.ConflictStateListener"
-                topic="git4idea.repo.GitConflictsHolder$ConflictsListener"/>
+                topic="git4idea.status.GitStagingAreaHolder$StagingAreaListener"/>
     </projectListeners>
 
 </idea-plugin>
