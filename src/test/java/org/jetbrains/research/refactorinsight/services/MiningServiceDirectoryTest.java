@@ -29,7 +29,7 @@ import org.jetbrains.research.refactorinsight.ui.windows.GitWindow;
 /**
  * Extend GitSingleRepoTest
  * variables as myProject, repo, projectPath and much more are available from super classes
- * aTest method names have to begin with aTest!
+ * test method names have to begin with test!
  */
 public class MiningServiceDirectoryTest extends GitSingleRepoTest {
 
@@ -45,7 +45,7 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
     miner = MiningService.getInstance(myProject);
     String thisDir = System.getProperty("user.dir");
     //Make files for source and destination directory
-    File srcDir = new File(thisDir + "/src/aTest/testData/example-refactorings");
+    File srcDir = new File(thisDir + "/src/test/testData/example-refactorings");
     File destDir = new File(projectPath);
     //Copy directory + contents
     try {
@@ -69,10 +69,10 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
   }
 
   /**
-   * This aTest method is used for testing multiple functionalities.
+   * This test method is used for testing multiple functionalities.
    * This is the case since the setup method can be heavy and there is no need
    * in mining multiple times.
-   * This method aTest the functionality of the MiningService (miner in this case).
+   * This method test the functionality of the MiningService (miner in this case).
    * It tests the miner at commit method using mocking.
    * It also tests the renderers.
    */
@@ -99,7 +99,7 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
     //Testing that the mining cannot happen on a null repository:
     assertThrows(NullPointerException.class, () -> miner.mineAndWait(null));
 
-    //aTest mine at commit
+    //test mine at commit
     Hash hash = createHashObject(head);
     Hash parent = mock(Hash.class);
     //return a random string
@@ -109,8 +109,8 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
 
     //cannot be mocked since its dependencies must not be null
     VcsCommitMetadataImpl vcsCommitMetadata = new VcsCommitMetadataImpl(hash,
-        parents, 0, repo.getRoot(), "subject",
-        user, "message", user, 0);
+            parents, 0, repo.getRoot(), "subject",
+            user, "message", user, 0);
 
     GitWindow gitWindow = mock(GitWindow.class);
     Mockito.doThrow(new NullPointerException()).when(gitWindow).refresh(any());
@@ -119,49 +119,49 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
     miner.mineAtCommit(vcsCommitMetadata, myProject, gitWindow);
     verify(parent, new Times(1)).asString();
 
-    //aTest the main cell renderer works as expected on this map
+    //test the main cell renderer works as expected on this map
     MainCellRenderer cellRenderer = new MainCellRenderer();
     miner.getState().refactoringsMap.map.values()
-        .forEach(x -> {
-          Tree tree1 = TreeUtils.buildTree(x.getRefactorings());
-          tree1.setCellRenderer(cellRenderer);
-          //Testing that the VCS tool tree is not null:
-          assertNotNull(tree1);
-          DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
+            .forEach(x -> {
+              Tree tree1 = TreeUtils.buildTree(x.getRefactorings());
+              tree1.setCellRenderer(cellRenderer);
+              //Testing that the VCS tool tree is not null:
+              assertNotNull(tree1);
+              DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
 
-          //for each refactoring check that the renderer works properly
-          root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
-            cellRenderer.customizeCellRenderer(tree1, node, false,
-                false, node.isLeaf(), 1, false);
-            //Testing that for node "node" the renderer works
-            assertNotNull(cellRenderer
-                .getTreeCellRendererComponent(tree1, node, false,
-                    false, node.isLeaf(), 1, false));
-          });
-        });
+              //for each refactoring check that the renderer works properly
+              root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
+                cellRenderer.customizeCellRenderer(tree1, node, false,
+                        false, node.isLeaf(), 1, false);
+                //Testing that for node "node" the renderer works
+                assertNotNull(cellRenderer
+                        .getTreeCellRendererComponent(tree1, node, false,
+                                false, node.isLeaf(), 1, false));
+              });
+            });
 
-    //aTest the history toolbar renderer works as expected on this map
+    //test the history toolbar renderer works as expected on this map
     HistoryToolbarRenderer historyToolbarRenderer = new HistoryToolbarRenderer();
     miner.getRefactoringHistory()
-        .forEach((key, refactorings) -> {
-          DefaultMutableTreeNode root = new DefaultMutableTreeNode("root");
-          for (RefactoringInfo ref : refactorings) {
-            TreeUtils.createHistoryTree(root, ref);
-          }
-          Tree tree1 = new Tree(root);
-          tree1.setCellRenderer(historyToolbarRenderer);
-          //testing that the history toolbar tree is not null
-          assertNotNull(tree1);
-          DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
-          root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
-            historyToolbarRenderer.customizeCellRenderer(tree1, node, false,
-                false, node.isLeaf(), 1, false);
-            //Testing that for node "node" the renderer works"
-            assertNotNull(historyToolbarRenderer
-                .getTreeCellRendererComponent(tree1, node, false,
-                    false, node.isLeaf(), 1, false));
-          });
-        });
+            .forEach((key, refactorings) -> {
+              DefaultMutableTreeNode root = new DefaultMutableTreeNode("root");
+              for (RefactoringInfo ref : refactorings) {
+                TreeUtils.createHistoryTree(root, ref);
+              }
+              Tree tree1 = new Tree(root);
+              tree1.setCellRenderer(historyToolbarRenderer);
+              //testing that the history toolbar tree is not null
+              assertNotNull(tree1);
+              DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree1.getModel().getRoot();
+              root1.breadthFirstEnumeration().asIterator().forEachRemaining(node -> {
+                historyToolbarRenderer.customizeCellRenderer(tree1, node, false,
+                        false, node.isLeaf(), 1, false);
+                //Testing that for node "node" the renderer works"
+                assertNotNull(historyToolbarRenderer
+                        .getTreeCellRendererComponent(tree1, node, false,
+                                false, node.isLeaf(), 1, false));
+              });
+            });
   }
 
   /**
@@ -176,13 +176,13 @@ public class MiningServiceDirectoryTest extends GitSingleRepoTest {
       @NotNull
       @Override
       public String getName() {
-        return "aTest";
+        return "test";
       }
 
       @NotNull
       @Override
       public String getEmail() {
-        return "aTest";
+        return "test";
       }
     };
   }
