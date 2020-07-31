@@ -58,11 +58,11 @@ import org.jetbrains.research.refactorinsight.ui.tree.renderers.MainCellRenderer
 /**
  * Extend GitSingleRepoTest
  * variables as myProject, repo, projectPath and much more are available from super classes
- * test method names have to begin with test!
+ * aTest method names have to begin with aTest!
  */
 public class MiningServiceManualTest extends GitSingleRepoTest {
 
-  private final String dirPath = "src/test/testData/miningService/";
+  private final String dirPath = "src/aTest/testData/miningService/";
   // each dir is a new commit
   private final String[] commitDirs = {
       "commit_2",
@@ -154,7 +154,7 @@ public class MiningServiceManualTest extends GitSingleRepoTest {
         .map(Paths::get)
         .map(dir -> {
           buildVFS(dir);
-          return GitExecutor.addCommit(repo, "test commit");
+          return GitExecutor.addCommit(repo, "aTest commit");
         })
         .toArray(String[]::new);
     repo.update();

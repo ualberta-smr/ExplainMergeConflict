@@ -29,6 +29,7 @@ public class ShowExplanationsToolWindowAction extends AnAction {
         GitRepository repo = Utils.getCurrentRepository(e.getProject());
 
         // TODO - show popup only for files without conflicts
+        // TODO - use ActionPopupMenu?
         // Ideally, action should not be visible if no conflicts are found
         if (!Utils.isInConflictState(repo)) {
             showPopup(e.getDataContext());
