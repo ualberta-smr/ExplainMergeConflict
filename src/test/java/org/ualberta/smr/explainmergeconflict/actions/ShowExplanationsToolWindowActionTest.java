@@ -3,22 +3,8 @@ package org.ualberta.smr.explainmergeconflict.actions;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.VirtualFileManager;
-import com.intellij.testFramework.TestDataFile;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.testFramework.fixtures.TempDirTestFixture;
-import git4idea.repo.GitRepository;
-import git4idea.repo.GitRepositoryCreator;
-import git4idea.repo.GitRepositoryManager;
-import git4idea.test.GitSingleRepoTest;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.DirectoryFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.ualberta.smr.explainmergeconflict.actions.ShowExplanationsToolWindowAction;
-
-import java.io.File;
-import java.io.IOException;
 
 public class ShowExplanationsToolWindowActionTest extends BasePlatformTestCase {
     private String head;

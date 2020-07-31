@@ -68,7 +68,7 @@
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
         <listener
                 class="org.ualberta.smr.explainmergeconflict.processors.ConflictStateListener"
-                topic="git4idea.repo.GitConflictsHolder$ConflictsListener"/>
+                topic="git4idea.status.GitStagingAreaHolder$StagingAreaListener"/>
     </projectListeners>
 
 </idea-plugin>
