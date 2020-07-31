@@ -29,9 +29,6 @@
         <projectService serviceImplementation="org.jetbrains.research.refactorinsight.services.SettingsState"/>
 
         <errorHandler implementation="org.jetbrains.research.refactorinsight.reporter.RefactorInsightErrorReporter"/>
-
-<!--        <toolWindow id="Explain Merge Conflict" anchor="right"-->
-<!--                    factoryClass="org.ualberta.smr.explainmergeconflict.ui.ExplanationsToolWindowFactory"/>-->
     </extensions>
 
     <actions>
