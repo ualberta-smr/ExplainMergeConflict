@@ -7,9 +7,12 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 import git4idea.repo.GitRepository;
+import org.ualberta.smr.explainmergeconflict.services.ConflictRegionController;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class ExplanationsToolWindow implements DumbAware {
     private Project project;
@@ -34,6 +37,14 @@ public class ExplanationsToolWindow implements DumbAware {
         file = Utils.getCurrentFileFromEditor(project);
 
         initializeToolWindow();
+
+        showLogButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                VirtualFile file = Utils.getCurrentFileFromEditor(project);
+                ConflictRegionController.jumpToLine(project, repo, file);
+            }
+        });
     }
 
     private void initializeToolWindow() {
