@@ -11,14 +11,16 @@ import git4idea.commands.Git;
 import git4idea.commands.GitCommand;
 import git4idea.commands.GitCommandResult;
 import git4idea.commands.GitLineHandler;
+import git4idea.repo.GitConflict;
 import git4idea.repo.GitRepository;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ConflictRegionController {
     public static void jumpToLine(Project project, GitRepository repo, VirtualFile file) {
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Detecting all conflict files for " + project.getName(), false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "explainmergeconflict: running git diff to detect conflict region lines" + project.getName(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 GitLineHandler h = new GitLineHandler(project, repo.getRoot(), GitCommand.DIFF);
@@ -32,6 +34,17 @@ public class ConflictRegionController {
             }
         });
     }
+
+    // TODO - read conflicts
+    public static List<GitConflict> getConflictFiles(GitRepository repo) {
+        List<GitConflict> conflicts = new ArrayList<>();
+        repo.getStagingAreaHolder().getAllConflicts().forEach(gitConflict -> {
+            conflicts.add(gitConflict);
+            System.out.println(gitConflict.getFilePath().getName());
+        });
+        return conflicts;
+    }
+
 
     public static void updateDescriptor(Project project, VirtualFile file) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
