@@ -34,6 +34,8 @@ public class ExplanationsToolWindow implements DumbAware {
                                   Project project) {
         this.project = project;
         this.repo = repo;
+        // Upon initialization, the file editor manager listener will not trigger if registered within the tool window
+        // Until the listener is registered in plugin.xml, we will need to call our utils method to read file for now
         file = Utils.getCurrentFileFromEditor(project);
 
         initializeToolWindow();
@@ -41,7 +43,6 @@ public class ExplanationsToolWindow implements DumbAware {
         showLogButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                VirtualFile file = Utils.getCurrentFileFromEditor(project);
                 ConflictRegionController.jumpToLine(project, repo, file);
             }
         });
@@ -92,6 +93,7 @@ public class ExplanationsToolWindow implements DumbAware {
 
     private void resetUIToNonConflictState() {
         headerTextPane.setText(null);
+        
     }
 
     private void updateBackgroundColors() {
