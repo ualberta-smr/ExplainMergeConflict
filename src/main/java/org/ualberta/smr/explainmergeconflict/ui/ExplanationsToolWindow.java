@@ -29,6 +29,7 @@ public class ExplanationsToolWindow implements DumbAware {
     private JLabel labelOurs;
     private JLabel labelTheirs;
     private JScrollPane headerPane;
+    private JPanel bodyPanel;
 
     public ExplanationsToolWindow(GitRepository repo,
                                   Project project) {
@@ -38,7 +39,23 @@ public class ExplanationsToolWindow implements DumbAware {
         // Until the listener is registered in plugin.xml, we will need to call our utils method to read file for now
         file = Utils.getCurrentFileFromEditor(project);
 
-        initializeToolWindow();
+        init();
+        updateUI();
+    }
+
+    private void init() {
+        // TODO - register as plugin listener in plugin.xml
+        // reference https://intellij-support.jetbrains.com/hc/en-us/community/posts/206762535-Action-to-trigger-on-currently-selected-file-change
+        // Borrowed from VcsLogTabsWatcher.java
+        project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new PluginEditorManagerListener() {
+            @Override
+            public void selectionChanged(@org.jetbrains.annotations.NotNull final FileEditorManagerEvent event){
+                if (file == null || !file.equals(event.getNewFile())) {
+                    file = event.getNewFile();
+                    updateUI();
+                }
+            }
+        });
 
         showLogButton.addActionListener(new ActionListener() {
             @Override
@@ -48,59 +65,26 @@ public class ExplanationsToolWindow implements DumbAware {
         });
     }
 
-    private void initializeToolWindow() {
-        updateUIIfMergeConflictState();
-//        updateBackgroundColors();
-
-        // TODO - register as plugin listener in plugin.xml
-        // reference https://intellij-support.jetbrains.com/hc/en-us/community/posts/206762535-Action-to-trigger-on-currently-selected-file-change
-        // Borrowed from VcsLogTabsWatcher.java
-        project.getMessageBus().connect().subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new PluginEditorManagerListener() {
-            @Override
-            public void selectionChanged(@org.jetbrains.annotations.NotNull final FileEditorManagerEvent event){
-                if (file == null || !file.equals(event.getNewFile())) {
-                    file = event.getNewFile();
-                    updateUIIfMergeConflictState();
-                }
-            }
-        });
-    }
-
-    private void updateUIIfMergeConflictState() {
-        boolean conflictsExist =
-                Utils.isInConflictState(repo);
-
-        if (conflictsExist) {
-            updateUIInConflictState();
-        } else {
-            resetUIToNonConflictState();
-        }
-    }
-
-    private void updateUIInConflictState() {
+    private void updateUI() {
         if (file == null) {
-            headerTextPane.setText("No file currently opened");
+            headerTextPane.setText("No file currently opened.");
+            bodyPanel.hide();
+        } else if (file.getName().equals("")) {
+            // Typically, non-source files have "" has file names for some reason.
+            // We will just ignore them for now.
+            headerTextPane.setText("Currently viewed file is not a source file.");
+            bodyPanel.hide();
         } else {
-            // Typically name is empty if we are viewing a diff of a file
-            // For now, let's ignore diff views
-            if (file.getName().equals("")) {
-                headerTextPane.setText("Currently viewed file must be source");
-            } else {
-                headerTextPane.setText("<NUMBER> conflict regions were found in file " + file.getName());
-            }
+            bodyPanel.show();
+            headerTextPane.setText("<NUMBER> conflict regions were found in file " + file.getName());
         }
     }
 
-    private void resetUIToNonConflictState() {
-        headerTextPane.setText(null);
-        
-    }
-
-    private void updateBackgroundColors() {
-        // TODO update color when Editor theme changes
-        // We can do so by referring to EditorColorsManager.getInstance()
-        // .getGlobalScheme
-    }
+//    private void updateBackgroundColors() {
+//        // TODO update color when Editor theme changes
+//        // We can do so by referring to EditorColorsManager.getInstance()
+//        // .getGlobalScheme
+//    }
 
     public JPanel getContent() {
         return explanationsToolWindowContent;
