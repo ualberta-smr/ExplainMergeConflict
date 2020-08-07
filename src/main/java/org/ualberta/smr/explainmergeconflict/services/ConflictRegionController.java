@@ -25,19 +25,25 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class ConflictRegionController {
-    public static void jumpToLine(Project project, GitRepository repo, VirtualFile file) {
+
+    public static void showConflictRegion(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
+        runDiffForFileAndThenUpdate(project, repo, file);
+    }
+
+    public static void runDiffForFileAndThenUpdate(Project project, GitRepository repo, VirtualFile file) {
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "explainmergeconflict: running git diff to detect conflict region lines" + project.getName(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 // Get diff view that only shows the conflicting regions for the current file
+                // Reference: Are Refactorings To Blame? An Empirical Study of Refactorings in Merge Conflicts
                 GitLineHandler h = new GitLineHandler(project, repo.getRoot(), GitCommand.DIFF);
                 h.addParameters("-U0");
-                h.addParameters(file.getPath());
                 h.endOptions();
+                h.addParameters(file.getPath());
+
                 GitCommandResult result = Git.getInstance().runCommand(h);
                 List<String> resultList = result.getOutput();
-                System.out.println(resultList);
-                // Line index starts at 0
+
                 test(resultList, file);
                 updateDescriptor(project, file, resultList);
             }
@@ -49,76 +55,31 @@ public class ConflictRegionController {
         List<GitConflict> conflicts = new ArrayList<>();
         repo.getStagingAreaHolder().getAllConflicts().forEach(gitConflict -> {
             conflicts.add(gitConflict);
-            System.out.println("THIS IS A CONFLICT FILE" + gitConflict.getFilePath().getName());
+            System.out.println("THIS IS A CONFLICT FILE " + gitConflict.getFilePath().getName());
         });
         return conflicts;
     }
 
-    public static void getConflictRegionDataForFile(@NotNull VirtualFile file, @NotNull List<String> resultOutputList) {
-        if (resultOutputList.isEmpty()) return;
-
-        ArrayList<String> fileNameList = new ArrayList<>(resultOutputList);
-//        ArrayList<String> data = new ArrayList<>(resultOutputList);
-        fileNameList.removeIf(e -> !e.startsWith("diff --cc"));
-//        data.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
-
-        int indexOfCurrentFileName;
-        // Extract the file name from "diff --cc <file name>" within the output
-        // Replace "diff --cc <file name>" with the file name we extract
-        for (int i = 0; i < fileNameList.size(); i++) {
-            String fileName = fileNameList.get(i)
-                    .replaceAll("diff --cc", "")
-                    .trim();
-
-            if (fileName.equals(file.getName())) {
-                indexOfCurrentFileName = resultOutputList.indexOf(fileNameList.get(i));
-                break;
-            }
-        }
-
-        // TODO - error or ignore if filename is never found
-
-
-        System.out.println(fileNameList);
-    }
-
     public static void test(List<String> resultList, VirtualFile file) {
-        if (resultList.isEmpty()) return;
         ArrayList<String> filteredList = new ArrayList<>(resultList);
-        filteredList.removeIf(e -> !e.startsWith("diff --cc") && !e.startsWith("@@@"));
-//        filteredList.removeIf(e -> !e.startsWith("@@@"));
-        System.out.println(filteredList);
+        filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
+
         if (filteredList.isEmpty()) return; // TODO condition where there is no diff
-        String currentKey = null;
-        HashMap<String, ArrayList<String>> map = new HashMap<>();
-        ArrayList<String> values = new ArrayList<>();
-        // TODO - arraylist for values
-        boolean startOfResults = true;
-        for (String result: filteredList) {
-            if (result.startsWith("diff --cc")) {
-                result = result.replaceAll("diff --cc", "");
-                result = result.trim();
-                currentKey = result;
-                if (startOfResults) {
-                    startOfResults = false;
-                } else {
-                    map.put(currentKey, values);
-                }
-            } else if (result.startsWith("@@@")) {
-                // https://stackoverflow.com/questions/4662215/how-to-extract-a-substring-using-regex
-                // Extract the start line and length of the third pair for a file diff
-                // This will give us the information we need for an entire conflict region within a file
-                int indexOfThirdPairComma = result.lastIndexOf(",");
-                Pattern pattern = Pattern.compile("\\d+,\\d+\\s@");
-                Matcher matcher = pattern.matcher(result);
-                if (matcher.find()) {
-                    String pair = matcher.group().replaceAll("\\s@", "").trim();
-                    values.add(pair);
-                }
+
+        Pattern pattern = Pattern.compile("\\d+,\\d+\\s@");
+        Matcher matcher;
+
+        // Extract only the third pair of numbers for each region
+        // Format: (start line number of conflict region, length of conflict region)
+        for (String conflictRegion: filteredList) {
+            matcher = pattern.matcher(conflictRegion);
+
+            if (matcher.find()) {
+                String pair = matcher.group()
+                        .replaceAll("\\s@", "")
+                        .trim();
             }
-            System.out.println(result);
         }
-        System.out.println(map);
     }
 
 
@@ -129,7 +90,9 @@ public class ConflictRegionController {
                 // TODO TEMPORARY
                 GitRepository repo = GitRepositoryManager.getInstance(project).getRepositories().get(0);
                 getConflictFiles(repo);
-                test(resultList, file);
+                if (!resultList.isEmpty()) {
+                    test(resultList, file);
+                }
                 OpenFileDescriptor descriptor = new OpenFileDescriptor(project, file, 12, 0);
                 descriptor.navigateInEditor(project, true);
             }

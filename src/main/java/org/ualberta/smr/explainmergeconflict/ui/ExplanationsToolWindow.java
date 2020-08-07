@@ -60,7 +60,7 @@ public class ExplanationsToolWindow implements DumbAware {
         showLogButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ConflictRegionController.jumpToLine(project, repo, file);
+                ConflictRegionController.showConflictRegion(project, repo, file);
             }
         });
     }
