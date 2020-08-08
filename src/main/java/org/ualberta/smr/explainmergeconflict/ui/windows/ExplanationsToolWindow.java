@@ -1,35 +1,44 @@
-package org.ualberta.smr.explainmergeconflict.ui;
+package org.ualberta.smr.explainmergeconflict.ui.windows;
 
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
-import org.ualberta.smr.explainmergeconflict.services.ConflictRegionController;
+import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
+import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictsTreeCellRenderer;
+import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNodeType;
+import org.ualberta.smr.explainmergeconflict.utils.ConflictsTreeUtils;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 
 public class ExplanationsToolWindow implements DumbAware {
     private Project project;
-    private ToolWindow toolWindow;
     private GitRepository repo;
     private VirtualFile file;
+
     private JPanel explanationsToolWindowContent;
     private JPanel headerPanel;
-    private JTextPane headerTextPane;
+    private JTextPane textPaneHeader;
     private JTextPane textPaneOurs;
-    private JTextPane textPaneTheirs;
-    private JButton showLogButton;
-    private JButton showLogButton1;
     private JLabel labelOurs;
     private JLabel labelTheirs;
     private JScrollPane headerPane;
     private JPanel bodyPanel;
+    private JTree treeTheirs;
+    private JTextPane textPaneTheirs;
+    private JSplitPane splitPaneOurs;
+    private JSplitPane splitPaneTheirs;
+    private JScrollPane scrollPaneOursLeft;
+    private JScrollPane scrollPaneOursRight;
+    private JScrollPane scrollPaneTheirsLeft;
+    private JScrollPane scrollPaneTheirsRight;
+    private JTree treeOurs;
 
     public ExplanationsToolWindow(GitRepository repo,
                                   Project project) {
@@ -56,27 +65,20 @@ public class ExplanationsToolWindow implements DumbAware {
                 }
             }
         });
-
-        showLogButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ConflictRegionController.showConflictRegion(project, repo, file);
-            }
-        });
     }
 
     private void updateUI() {
         if (file == null) {
-            headerTextPane.setText("No file currently opened.");
+            textPaneHeader.setText("No file currently opened.");
             bodyPanel.hide();
         } else if (file.getName().equals("")) {
             // Typically, non-source files have "" has file names for some reason.
             // We will just ignore them for now.
-            headerTextPane.setText("Currently viewed file is not a source file.");
+            textPaneHeader.setText("Currently viewed file is not a source file.");
             bodyPanel.hide();
         } else {
             bodyPanel.show();
-            headerTextPane.setText("<NUMBER> conflict regions were found in file " + file.getName());
+            textPaneHeader.setText("<NUMBER> conflict regions were found in file " + file.getName());
         }
     }
 
@@ -88,6 +90,21 @@ public class ExplanationsToolWindow implements DumbAware {
 
     public JPanel getContent() {
         return explanationsToolWindowContent;
+    }
+
+    // Needed for Custom Create components declared through GUI Designer
+    private void createUIComponents() {
+        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Ours"));
+        DefaultTreeModel model = new DefaultTreeModel(rootOurs);
+
+        /*
+         * Due to UI issues using JetBrain's Tree with ColoredTreeCellRenderer, we will simply use JTree for now.
+         * For more information, see ConflictsTreeCellRenderer.
+         * TODO - use Tree after resolving disppearing text with ColoredTreeCellRenderer.
+         */
+        treeOurs = new JTree(model);
+        scrollPaneOursLeft = new JBScrollPane(treeOurs);
+        treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
     }
 
     /**

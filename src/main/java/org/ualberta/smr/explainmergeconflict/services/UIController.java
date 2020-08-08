@@ -8,7 +8,7 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import git4idea.repo.GitRepository;
-import org.ualberta.smr.explainmergeconflict.ui.ExplanationsToolWindow;
+import org.ualberta.smr.explainmergeconflict.ui.windows.ExplanationsToolWindow;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 public class UIController {
