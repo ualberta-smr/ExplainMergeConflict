@@ -54,7 +54,7 @@
               <dividerLocation value="18"/>
               <dividerSize value="4"/>
             </properties>
-            <border type="none">
+            <border type="empty">
               <color color="-4473925"/>
             </border>
             <children>
@@ -76,7 +76,7 @@
                   <splitpane position="left"/>
                 </constraints>
                 <properties/>
-                <border type="none"/>
+                <border type="empty"/>
                 <children>
                   <component id="d08d2" class="javax.swing.JTree" binding="treeOurs" custom-create="true">
                     <constraints/>

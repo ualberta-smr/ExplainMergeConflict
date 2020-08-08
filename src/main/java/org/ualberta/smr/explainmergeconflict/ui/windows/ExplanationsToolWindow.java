@@ -8,6 +8,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.JBSplitter;
 import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
+import org.ualberta.smr.explainmergeconflict.services.ConflictRegionController;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictsTreeCellRenderer;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNodeType;
@@ -15,6 +16,8 @@ import org.ualberta.smr.explainmergeconflict.utils.ConflictsTreeUtils;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import javax.swing.*;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 
@@ -106,11 +109,24 @@ public class ExplanationsToolWindow implements DumbAware {
 
         // Ours
         // TODO - use bundle for static node text
+        // TODO - separate function for this
         DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Ours"));
         DefaultTreeModel modelOurs = new DefaultTreeModel(rootOurs);
         treeOurs = new JTree(modelOurs);
         scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
+        treeOurs.addTreeSelectionListener(new TreeSelectionListener() {
+            @Override
+            public void valueChanged(TreeSelectionEvent e) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeOurs.getLastSelectedPathComponent();
+                ConflictNode object = (ConflictNode) node.getUserObject();
+
+                if (object.getType() == ConflictNodeType.CONFLICTREGION) {
+                    ConflictRegionController.showConflictRegion(project, repo, file);
+
+                }
+            }
+        });
 
         // Theirs
         DefaultMutableTreeNode rootTheirs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Theirs"));

@@ -30,7 +30,7 @@ public class ConflictRegionController {
         runDiffForFileAndThenUpdate(project, repo, file);
     }
 
-    public static void runDiffForFileAndThenUpdate(Project project, GitRepository repo, VirtualFile file) {
+    private static void runDiffForFileAndThenUpdate(Project project, GitRepository repo, VirtualFile file) {
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "explainmergeconflict: running git diff to detect conflict region lines" + project.getName(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -51,16 +51,15 @@ public class ConflictRegionController {
     }
 
     // TODO - read conflicts
-    public static List<GitConflict> getConflictFiles(@NotNull GitRepository repo) {
+    private static List<GitConflict> getConflictFiles(@NotNull GitRepository repo) {
         List<GitConflict> conflicts = new ArrayList<>();
         repo.getStagingAreaHolder().getAllConflicts().forEach(gitConflict -> {
             conflicts.add(gitConflict);
-            System.out.println("THIS IS A CONFLICT FILE " + gitConflict.getFilePath().getName());
         });
         return conflicts;
     }
 
-    public static void test(List<String> resultList, VirtualFile file) {
+    private static void test(List<String> resultList, VirtualFile file) {
         ArrayList<String> filteredList = new ArrayList<>(resultList);
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
 
