@@ -2,6 +2,7 @@ package org.ualberta.smr.explainmergeconflict.ui.trees.renderers;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.ui.JBColor;
+import com.intellij.util.PlatformIcons;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -22,11 +23,14 @@ public class ConflictsTreeCellRenderer extends DefaultTreeCellRenderer {
 
         if (!(node.getUserObject() instanceof ConflictNode)) return null;
 
+        ConflictNodeType nodeType = ((ConflictNode) node.getUserObject()).getType();
         Icon icon = null;
 
-        if (((ConflictNode) node.getUserObject()).getType() == ConflictNodeType.BRANCHROOT) {
+        if (nodeType == ConflictNodeType.BRANCHROOT) {
             icon = AllIcons.Vcs.BranchNode;
-        } else if (((ConflictNode) node.getUserObject()).getType() == ConflictNodeType.COMMIT) {
+        } else if (nodeType == ConflictNodeType.CONFLICTREGION) {
+            icon = PlatformIcons.FOLDER_ICON;
+        } else if (nodeType == ConflictNodeType.COMMIT) {
             setForeground(JBColor.RED);
         }
 

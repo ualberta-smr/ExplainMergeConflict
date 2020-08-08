@@ -100,14 +100,14 @@
             </properties>
             <border type="empty"/>
             <children>
-              <scrollpane id="cf15" binding="scrollPaneTheirsLeft">
+              <scrollpane id="cf15" binding="scrollPaneTheirsLeft" custom-create="true">
                 <constraints>
                   <splitpane position="left"/>
                 </constraints>
                 <properties/>
                 <border type="empty"/>
                 <children>
-                  <component id="5713a" class="javax.swing.JTree" binding="treeTheirs">
+                  <component id="5713a" class="javax.swing.JTree" binding="treeTheirs" custom-create="true">
                     <constraints/>
                     <properties/>
                   </component>

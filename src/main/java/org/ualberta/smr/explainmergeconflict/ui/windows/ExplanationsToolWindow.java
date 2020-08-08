@@ -5,6 +5,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.JBSplitter;
 import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
@@ -94,17 +95,29 @@ public class ExplanationsToolWindow implements DumbAware {
 
     // Needed for Custom Create components declared through GUI Designer
     private void createUIComponents() {
-        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Ours"));
-        DefaultTreeModel model = new DefaultTreeModel(rootOurs);
-
         /*
-         * Due to UI issues using JetBrain's Tree with ColoredTreeCellRenderer, we will simply use JTree for now.
+         * Trees is JetBrains's implementation of JTree. Due to UI issues using JetBrain's Tree with
+         * ColoredTreeCellRenderer, we will simply use JTree for now.
          * For more information, see ConflictsTreeCellRenderer.
          * TODO - use Tree after resolving disppearing text with ColoredTreeCellRenderer.
          */
-        treeOurs = new JTree(model);
+
+        // TODO - custom create scrollpaneoursright, scrollpanetheirsright
+
+        // Ours
+        // TODO - use bundle for static node text
+        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Ours"));
+        DefaultTreeModel modelOurs = new DefaultTreeModel(rootOurs);
+        treeOurs = new JTree(modelOurs);
         scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
+
+        // Theirs
+        DefaultMutableTreeNode rootTheirs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Theirs"));
+        DefaultTreeModel modelTheirs = new DefaultTreeModel(rootTheirs);
+        treeTheirs = new JTree(modelTheirs);
+        scrollPaneTheirsLeft = new JBScrollPane(treeTheirs);
+        treeTheirs.setCellRenderer(new ConflictsTreeCellRenderer());
     }
 
     /**
