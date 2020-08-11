@@ -50,15 +50,6 @@ public class ConflictRegionController {
         });
     }
 
-    // TODO - read conflicts
-    private static List<GitConflict> getConflictFiles(@NotNull GitRepository repo) {
-        List<GitConflict> conflicts = new ArrayList<>();
-        repo.getStagingAreaHolder().getAllConflicts().forEach(gitConflict -> {
-            conflicts.add(gitConflict);
-        });
-        return conflicts;
-    }
-
     private static void test(List<String> resultList, VirtualFile file) {
         ArrayList<String> filteredList = new ArrayList<>(resultList);
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
@@ -87,8 +78,6 @@ public class ConflictRegionController {
             @Override
             public void run() {
                 // TODO TEMPORARY
-                GitRepository repo = GitRepositoryManager.getInstance(project).getRepositories().get(0);
-                getConflictFiles(repo);
                 if (!resultList.isEmpty()) {
                     test(resultList, file);
                 }
