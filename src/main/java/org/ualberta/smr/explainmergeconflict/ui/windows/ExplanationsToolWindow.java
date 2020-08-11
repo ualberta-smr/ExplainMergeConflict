@@ -5,10 +5,10 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.ui.JBSplitter;
 import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
 import org.ualberta.smr.explainmergeconflict.services.ConflictRegionController;
+import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictsTreeCellRenderer;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNodeType;
@@ -48,10 +48,6 @@ public class ExplanationsToolWindow implements DumbAware {
                                   Project project) {
         this.project = project;
         this.repo = repo;
-        // Upon initialization, the file editor manager listener will not trigger if registered within the tool window
-        // Until the listener is registered in plugin.xml, we will need to call our utils method to read file for now
-        file = Utils.getCurrentFileFromEditor(project);
-
         init();
         updateUI();
     }
@@ -110,9 +106,14 @@ public class ExplanationsToolWindow implements DumbAware {
         // Ours
         // TODO - use bundle for static node text
         // TODO - separate function for this
-        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Ours"));
-        DefaultTreeModel modelOurs = new DefaultTreeModel(rootOurs);
-        treeOurs = new JTree(modelOurs);
+        // TODO - call this update CRs functionality elsewhere
+        // Upon initialization, the file editor manager listener will not trigger if registered within the tool window
+        // Until the listener is registered in plugin.xml, we will need to call our utils method to read file for now
+        file = Utils.getCurrentFileFromEditor(project);
+        ConflictRegionController.setConflictRegionsForFile(project, repo, file);
+        ConflictNode rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.ours"));
+        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
+        treeOurs = new JTree(rootOurs);
         scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
         treeOurs.addTreeSelectionListener(new TreeSelectionListener() {
@@ -122,14 +123,16 @@ public class ExplanationsToolWindow implements DumbAware {
                 ConflictNode object = (ConflictNode) node.getUserObject();
 
                 if (object.getType() == ConflictNodeType.CONFLICTREGION) {
-                    ConflictRegionController.showConflictRegion(project, repo, file);
-
+                    ConflictRegionController.showConflictRegionInEditor(project, file);
+                } else if (object.getType() == ConflictNodeType.COMMIT) {
+                    System.out.println("Commit selected!");
                 }
             }
         });
 
         // Theirs
-        DefaultMutableTreeNode rootTheirs = ConflictsTreeUtils.createRootAndChildren(new ConflictNode(ConflictNodeType.BRANCHROOT, "Theirs"));
+        rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.theirs"));
+        DefaultMutableTreeNode rootTheirs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
         DefaultTreeModel modelTheirs = new DefaultTreeModel(rootTheirs);
         treeTheirs = new JTree(modelTheirs);
         scrollPaneTheirsLeft = new JBScrollPane(treeTheirs);

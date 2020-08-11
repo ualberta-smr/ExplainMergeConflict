@@ -1,20 +1,33 @@
 package org.ualberta.smr.explainmergeconflict.utils;
 
+import com.intellij.openapi.vfs.VirtualFile;
+import org.ualberta.smr.explainmergeconflict.ConflictFile;
+import org.ualberta.smr.explainmergeconflict.ConflictRegion;
+import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
+import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNodeType;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.List;
 
 public class ConflictsTreeUtils {
-    public static DefaultMutableTreeNode createRootAndChildren(ConflictNode conflictNode) {
-        // TODO - parse and build children here
-        ConflictNode childNode = new ConflictNode(ConflictNodeType.CONFLICTREGION, "Conflict 1");
-        ConflictNode childNode2 = new ConflictNode(ConflictNodeType.COMMIT, "Commit 1");
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(conflictNode);
-        DefaultMutableTreeNode child1 = new DefaultMutableTreeNode(childNode);
-        DefaultMutableTreeNode child2 = new DefaultMutableTreeNode(childNode2);
-        child1.add(child2);
-        root.add(child1);
+    public static DefaultMutableTreeNode createRootAndChildren(ConflictNode rootNode, VirtualFile file) {
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootNode);
+        ConflictFile conflictFile = MergeConflictService.getConflictFiles().get(file.getPath());
+        List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
+
+        // If this assertion fails, this means we have a race condition!
+        assert !conflictRegions.isEmpty();
+
+        for (int i = 0; i < conflictRegions.size(); i++) {
+            String label = ExplainMergeConflictBundle.message("toolwindow.label.conflict") + " " + (i + 1);
+            ConflictNode childNode = new ConflictNode(ConflictNodeType.CONFLICTREGION, label);
+            DefaultMutableTreeNode child = new DefaultMutableTreeNode(childNode);
+            root.add(child);
+        }
+
         return root;
     }
 }

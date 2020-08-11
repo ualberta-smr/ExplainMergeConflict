@@ -23,17 +23,33 @@ import java.util.regex.Pattern;
 
 public class ConflictRegionController {
 
-    public static void showConflictRegion(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
+    public static void setConflictRegionsForFile(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
         assert Utils.isConflictFile(file);
         runDiffForFileAndThenUpdate(project, repo, file);
     }
 
+    public static void showConflictRegionInEditor(@NotNull Project project, @NotNull VirtualFile file) {
+        assert isConflictRegionProperlyInitialized(file);
+        updateDescriptor(project, file);
+    }
+
     private static void runDiffForFileAndThenUpdate(Project project, GitRepository repo, VirtualFile file) {
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "explainmergeconflict: running git diff to detect conflict region lines" + project.getName(), false) {
+        /*
+         * Rather than running the git command asynchronously as a background task, we should instead run it synchronously
+         * so that we don't face any race conditions - particularly, when we try to read conflict file data while it
+         * hasn't been processed yet. We do this using Task.Modal rather than Task.Background.
+         *
+         * For example, when we launch the Explain Merge Conflict tool window after running the show action, let the
+         * tool window wait for the git handler to resolve so that we have data to show. Otherwise, we will display an
+         * empty tree despite having already had initialized the conflict file data.
+         */
+        ProgressManager.getInstance().run(new Task.Modal(project, "explainmergeconflict: running git diff to detect conflict regions" + project.getName(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
-                // Get diff view that only shows the conflicting regions for the current file
-                // Reference: Are Refactorings To Blame? An Empirical Study of Refactorings in Merge Conflicts
+                /*
+                 * Get diff view that only shows the conflicting regions for the current file
+                 * Reference: Are Refactorings To Blame? An Empirical Study of Refactorings in Merge Conflicts
+                 */
                 GitLineHandler h = new GitLineHandler(project, repo.getRoot(), GitCommand.DIFF);
                 h.addParameters("-U0");
                 h.endOptions();
@@ -42,13 +58,12 @@ public class ConflictRegionController {
                 GitCommandResult result = Git.getInstance().runCommand(h);
                 List<String> resultList = result.getOutput();
 
-                test(resultList, file);
-                updateDescriptor(project, file, resultList);
+                registerConflictRegions(resultList, file);
             }
         });
     }
 
-    private static void test(List<String> resultList, VirtualFile file) {
+    private static void registerConflictRegions(List<String> resultList, VirtualFile file) {
         ArrayList<String> filteredList = new ArrayList<>(resultList);
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
 
@@ -60,8 +75,10 @@ public class ConflictRegionController {
         Pattern pattern = Pattern.compile("\\d+,\\d+\\s@");
         Matcher matcher;
 
-        // Extract only the third pair of numbers for each region
-        // Format: (start line number of conflict region, length of conflict region)
+        /*
+         * Extract only the third pair of numbers for each region
+         * Format: (start line number of conflict region, length of conflict region)
+         */
         for (String region: filteredList) {
             matcher = pattern.matcher(region);
 
@@ -77,6 +94,8 @@ public class ConflictRegionController {
         }
 
         conflictFile.setConflictRegions(conflictRegionList);
+        // TODO simplify setting conflict files and remove repetition
+        MergeConflictService.getConflictFiles().replace(file.getPath(), conflictFile);
     }
 
     private static ArrayList<Integer> convertPair(String pair) {
@@ -108,7 +127,16 @@ public class ConflictRegionController {
         return newPair;
     }
 
-    private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file, @NotNull List<String> resultList) {
+    private static boolean isConflictRegionProperlyInitialized(VirtualFile file) {
+        HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getConflictFiles();
+        List<ConflictRegion> conflictRegions = conflictFiles.get(file.getPath()).getConflictRegions();
+
+        // TODO - make sure if has subregions
+
+        return !conflictRegions.isEmpty();
+    }
+
+    private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
             public void run() {
