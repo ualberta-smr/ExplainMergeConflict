@@ -30,7 +30,6 @@ public class ConflictStateListener implements GitStagingAreaHolder.StagingAreaLi
              */
             if (mergeConflictService != null) {
                 Disposer.dispose(mergeConflictService);
-                System.out.println(Disposer.isDisposed(mergeConflictService));
                 mergeConflictService = null;
             }
 
