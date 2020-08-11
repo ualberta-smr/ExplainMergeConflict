@@ -9,11 +9,12 @@ import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
 public final class MergeConflictService implements Disposable {
-    private static final List<ConflictFile> conflictFiles = new ArrayList<>();
+    private static final HashMap<String, ConflictFile> conflictFilesMap = new HashMap<>();
     private final Project project;
 
     public MergeConflictService(Project project) {
@@ -38,14 +39,12 @@ public final class MergeConflictService implements Disposable {
                     conflict.getStatus(GitConflict.ConflictSide.OURS),
                     conflict.getStatus(GitConflict.ConflictSide.THEIRS)
             );
-            conflictFiles.add(conflictFile);
+            conflictFilesMap.put(conflict.getFilePath().toString(), conflictFile);
         }
-
-        conflictFiles.forEach(conflictFile -> System.out.println(conflictFile.getFilePath()));
     }
 
-    public static List<ConflictFile> getConflictFiles() {
-        return conflictFiles;
+    public static HashMap<String, ConflictFile> getConflictFiles() {
+        return conflictFilesMap;
     }
 
     /**

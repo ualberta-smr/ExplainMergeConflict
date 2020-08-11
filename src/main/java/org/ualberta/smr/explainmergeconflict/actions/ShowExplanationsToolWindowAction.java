@@ -10,15 +10,11 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
 import com.sun.istack.NotNull;
 import git4idea.repo.GitRepository;
-import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
-import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
 import org.ualberta.smr.explainmergeconflict.services.UIController;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import java.awt.GridLayout;
-import java.util.List;
-import java.util.Objects;
 
 public class ShowExplanationsToolWindowAction extends AnAction {
     @Override
@@ -31,29 +27,12 @@ public class ShowExplanationsToolWindowAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         GitRepository repo = Utils.getCurrentRepository(e.getProject());
 
-        if (shouldShowToolWindow(e.getDataContext())) {
+        if (Utils.isConflictFile(e.getData(CommonDataKeys.VIRTUAL_FILE))) {
             UIController.updateToolWindowAfterAction(repo);
         } else {
             showPopup(e.getDataContext());
         }
     }
-
-    private boolean shouldShowToolWindow(DataContext dataContext) {
-        List<ConflictFile> conflicts = MergeConflictService.getConflictFiles();
-
-        for (ConflictFile conflict: conflicts) {
-            if (conflict.getFilePath()
-                    .getPath()
-                    .equals(Objects.requireNonNull(
-                            dataContext.getData(CommonDataKeys.VIRTUAL_FILE)).getPath()
-                    )) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 
     // Reference: RefactoringHistoryToolbar.java
     private void showPopup(DataContext dataContext) {

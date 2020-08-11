@@ -11,22 +11,20 @@ import git4idea.commands.Git;
 import git4idea.commands.GitCommand;
 import git4idea.commands.GitCommandResult;
 import git4idea.commands.GitLineHandler;
-import git4idea.repo.GitConflict;
 import git4idea.repo.GitRepository;
-import git4idea.repo.GitRepositoryManager;
 import org.jetbrains.annotations.NotNull;
+import org.ualberta.smr.explainmergeconflict.ConflictFile;
+import org.ualberta.smr.explainmergeconflict.ConflictRegion;
+import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 public class ConflictRegionController {
 
     public static void showConflictRegion(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
+        assert Utils.isConflictFile(file);
         runDiffForFileAndThenUpdate(project, repo, file);
     }
 
@@ -56,32 +54,69 @@ public class ConflictRegionController {
 
         if (filteredList.isEmpty()) return; // TODO condition where there is no diff
 
+        List<ConflictRegion> conflictRegionList = new ArrayList<>();
+        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getConflictFiles();
+        ConflictFile conflictFile = conflictsMap.get(file.getPath());
         Pattern pattern = Pattern.compile("\\d+,\\d+\\s@");
         Matcher matcher;
 
         // Extract only the third pair of numbers for each region
         // Format: (start line number of conflict region, length of conflict region)
-        for (String conflictRegion: filteredList) {
-            matcher = pattern.matcher(conflictRegion);
+        for (String region: filteredList) {
+            matcher = pattern.matcher(region);
 
             if (matcher.find()) {
                 String pair = matcher.group()
                         .replaceAll("\\s@", "")
                         .trim();
+
+                ArrayList<Integer> newPair = convertPair(pair);
+                ConflictRegion conflictRegion = new ConflictRegion(file, newPair);
+                conflictRegionList.add(conflictRegion);
             }
         }
+
+        conflictFile.setConflictRegions(conflictRegionList);
     }
 
+    private static ArrayList<Integer> convertPair(String pair) {
+        int startLine = 0;
+        int length = 0;
+        Pattern pattern;
+        Matcher matcher;
+
+        pattern = Pattern.compile("\\d+,");
+        matcher = pattern.matcher(pair);
+
+        if (matcher.find()) {
+            String startLineStr = matcher.group().replaceAll(",", "").trim();
+            startLine = Integer.parseInt(startLineStr);
+        }
+
+        pattern = Pattern.compile(",\\d");
+        matcher = pattern.matcher(pair);
+
+        if (matcher.find()) {
+            String lengthStr = matcher.group().replaceAll(",", "").trim();
+            length = Integer.parseInt(lengthStr);
+        }
+
+        ArrayList<Integer> newPair = new ArrayList<>();
+        newPair.add(0, startLine);
+        newPair.add(1, length);
+
+        return newPair;
+    }
 
     private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file, @NotNull List<String> resultList) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
             public void run() {
-                // TODO TEMPORARY
-                if (!resultList.isEmpty()) {
-                    test(resultList, file);
-                }
-                OpenFileDescriptor descriptor = new OpenFileDescriptor(project, file, 12, 0);
+                HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getConflictFiles();
+                List<ConflictRegion> conflictRegions = conflictFiles.get(file.getPath()).getConflictRegions();
+                int regionStartLine = conflictRegions.get(0).getStartLine(); // TODO - no fixed index value
+
+                OpenFileDescriptor descriptor = new OpenFileDescriptor(project, file, regionStartLine-1, 0);
                 descriptor.navigateInEditor(project, true);
             }
         });

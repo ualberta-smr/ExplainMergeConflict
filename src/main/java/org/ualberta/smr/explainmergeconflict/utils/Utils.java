@@ -12,6 +12,12 @@ import git4idea.commands.GitCommand;
 import git4idea.commands.GitLineHandler;
 import git4idea.repo.GitRepository;
 import git4idea.repo.GitRepositoryManager;
+import org.ualberta.smr.explainmergeconflict.ConflictFile;
+import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class Utils {
 
@@ -46,6 +52,18 @@ public class Utils {
         return GitRepositoryManager.getInstance(project)
                 .getRepositories()
                 .get(0);
+    }
+
+    public static boolean isConflictFile(VirtualFile file) {
+        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getConflictFiles();
+        Iterator iterator = conflictsMap.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry pair = (Map.Entry) iterator.next();
+            boolean isConflictFile = pair.getKey().equals(file.getPath());
+            if (isConflictFile) return true;
+        }
+        return false;
     }
 
     public static String getRevisionShortAsString(Project project,
