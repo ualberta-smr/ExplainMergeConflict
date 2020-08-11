@@ -121,9 +121,10 @@ public class ExplanationsToolWindow implements DumbAware {
             public void valueChanged(TreeSelectionEvent e) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeOurs.getLastSelectedPathComponent();
                 ConflictNode object = (ConflictNode) node.getUserObject();
+                int indexOfNode = node.getParent().getIndex(node);
 
                 if (object.getType() == ConflictNodeType.CONFLICTREGION) {
-                    ConflictRegionController.showConflictRegionInEditor(project, file);
+                    ConflictRegionController.showConflictRegionInEditor(project, file, indexOfNode);
                 } else if (object.getType() == ConflictNodeType.COMMIT) {
                     System.out.println("Commit selected!");
                 }

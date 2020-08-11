@@ -28,9 +28,9 @@ public class ConflictRegionController {
         runDiffForFileAndThenUpdate(project, repo, file);
     }
 
-    public static void showConflictRegionInEditor(@NotNull Project project, @NotNull VirtualFile file) {
+    public static void showConflictRegionInEditor(@NotNull Project project, @NotNull VirtualFile file, @NotNull int nodeIndex) {
         assert isConflictRegionProperlyInitialized(file);
-        updateDescriptor(project, file);
+        updateDescriptor(project, file, nodeIndex);
     }
 
     private static void runDiffForFileAndThenUpdate(Project project, GitRepository repo, VirtualFile file) {
@@ -136,13 +136,13 @@ public class ConflictRegionController {
         return !conflictRegions.isEmpty();
     }
 
-    private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file) {
+    private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file, @NotNull int nodeIndex) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
             public void run() {
                 HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getConflictFiles();
                 List<ConflictRegion> conflictRegions = conflictFiles.get(file.getPath()).getConflictRegions();
-                int regionStartLine = conflictRegions.get(0).getStartLine(); // TODO - no fixed index value
+                int regionStartLine = conflictRegions.get(nodeIndex).getStartLine();
 
                 OpenFileDescriptor descriptor = new OpenFileDescriptor(project, file, regionStartLine-1, 0);
                 descriptor.navigateInEditor(project, true);
