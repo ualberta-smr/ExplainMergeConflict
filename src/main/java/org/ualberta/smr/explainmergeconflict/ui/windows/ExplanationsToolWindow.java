@@ -20,6 +20,7 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
 
 public class ExplanationsToolWindow implements DumbAware {
     private Project project;
@@ -68,18 +69,35 @@ public class ExplanationsToolWindow implements DumbAware {
     }
 
     private void updateUI() {
-        if (file == null) {
-            textPaneHeader.setText("No file currently opened.");
-            bodyPanel.hide();
-        } else if (file.getName().equals("")) {
-            // Typically, non-source files have "" has file names for some reason.
-            // We will just ignore them for now.
-            textPaneHeader.setText("Currently viewed file is not a source file.");
-            bodyPanel.hide();
-        } else {
-            bodyPanel.show();
+        // TODO - bundle text
+        // If viewing an actual conflict file, render all panels including the trees. Otherwise, remove it,
+        if (Utils.isConflictFile(file)) {
+            // TODO - find a way to only set regions if conflict regions are not registered!
+            ConflictRegionController.setConflictRegionsForFile(project, repo, file);
+            setNewTreeModelForCurrentFile();
+            bodyPanel.setVisible(true);
             textPaneHeader.setText("<NUMBER> conflict regions were found in file " + file.getName());
+        } else {
+            if (file == null) {
+                textPaneHeader.setText("No file currently opened.");
+            } else if (file.getName().equals("")) {
+                // Typically, non-source files have "" has file names for some reason.
+                // We will just ignore them for now.
+                textPaneHeader.setText("Currently viewed file is not a source file.");
+            } else {
+                textPaneHeader.setText("No conflict regions were found in file " + file.getName());
+            }
+
+            bodyPanel.setVisible(false);
+            treeOurs.setModel(null);
         }
+    }
+
+    private void setNewTreeModelForCurrentFile() {
+        ConflictNode rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.ours"));
+        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
+        TreeModel model = new DefaultTreeModel(rootOurs);
+        treeOurs.setModel(model);
     }
 
 //    private void updateBackgroundColors() {
@@ -104,22 +122,30 @@ public class ExplanationsToolWindow implements DumbAware {
         // TODO - custom create scrollpaneoursright, scrollpanetheirsright
 
         // Ours
-        // TODO - use bundle for static node text
         // TODO - separate function for this
         // TODO - call this update CRs functionality elsewhere
         // Upon initialization, the file editor manager listener will not trigger if registered within the tool window
         // Until the listener is registered in plugin.xml, we will need to call our utils method to read file for now
         file = Utils.getCurrentFileFromEditor(project);
+
+        // FIXME - find a way to make us call this automatically without having to call this manually several times
         ConflictRegionController.setConflictRegionsForFile(project, repo, file);
-        ConflictNode rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.ours"));
-        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
-        treeOurs = new JTree(rootOurs);
+
+        treeOurs = new JTree();
+        setNewTreeModelForCurrentFile();
+
         scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
         treeOurs.addTreeSelectionListener(new TreeSelectionListener() {
+
+            // TODO - separate class
             @Override
             public void valueChanged(TreeSelectionEvent e) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeOurs.getLastSelectedPathComponent();
+
+                // If null, our listener was triggered when selecting a node and then moving to another conflict file.
+                if (node == null) return;
+
                 ConflictNode object = (ConflictNode) node.getUserObject();
                 int indexOfNode = node.getParent().getIndex(node);
 
@@ -132,12 +158,13 @@ public class ExplanationsToolWindow implements DumbAware {
         });
 
         // Theirs
-        rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.theirs"));
-        DefaultMutableTreeNode rootTheirs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
-        DefaultTreeModel modelTheirs = new DefaultTreeModel(rootTheirs);
-        treeTheirs = new JTree(modelTheirs);
+//        rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.theirs"));
+//        DefaultMutableTreeNode rootTheirs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
+//        DefaultTreeModel modelTheirs = new DefaultTreeModel(rootTheirs);
+//        treeTheirs = new JTree(modelTheirs);
+       treeTheirs = new JTree();
         scrollPaneTheirsLeft = new JBScrollPane(treeTheirs);
-        treeTheirs.setCellRenderer(new ConflictsTreeCellRenderer());
+//        treeTheirs.setCellRenderer(new ConflictsTreeCellRenderer());
     }
 
     /**
