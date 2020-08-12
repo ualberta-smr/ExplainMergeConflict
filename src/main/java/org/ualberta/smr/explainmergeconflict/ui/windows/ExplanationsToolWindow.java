@@ -9,6 +9,7 @@ import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
 import org.ualberta.smr.explainmergeconflict.services.ConflictRegionController;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
+import org.ualberta.smr.explainmergeconflict.ui.trees.listeners.ConflictsTreeSelectionListener;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictsTreeCellRenderer;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNodeType;
@@ -118,7 +119,6 @@ public class ExplanationsToolWindow implements DumbAware {
          * For more information, see ConflictsTreeCellRenderer.
          * TODO - use Tree after resolving disppearing text with ColoredTreeCellRenderer.
          */
-
         // TODO - custom create scrollpaneoursright, scrollpanetheirsright
 
         // Ours
@@ -136,26 +136,7 @@ public class ExplanationsToolWindow implements DumbAware {
 
         scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
-        treeOurs.addTreeSelectionListener(new TreeSelectionListener() {
-
-            // TODO - separate class
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeOurs.getLastSelectedPathComponent();
-
-                // If null, our listener was triggered when selecting a node and then moving to another conflict file.
-                if (node == null) return;
-
-                ConflictNode object = (ConflictNode) node.getUserObject();
-                int indexOfNode = node.getParent().getIndex(node);
-
-                if (object.getType() == ConflictNodeType.CONFLICTREGION) {
-                    ConflictRegionController.showConflictRegionInEditor(project, file, indexOfNode);
-                } else if (object.getType() == ConflictNodeType.COMMIT) {
-                    System.out.println("Commit selected!");
-                }
-            }
-        });
+        treeOurs.addTreeSelectionListener(new ConflictsTreeSelectionListener(treeOurs, project, file));
 
         // Theirs
 //        rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.theirs"));
