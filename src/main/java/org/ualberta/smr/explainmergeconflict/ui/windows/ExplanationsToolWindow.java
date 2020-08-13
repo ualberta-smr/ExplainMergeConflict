@@ -7,7 +7,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
-import org.ualberta.smr.explainmergeconflict.services.ConflictRegionController;
+import org.ualberta.smr.explainmergeconflict.utils.ConflictRegionUtils;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
 import org.ualberta.smr.explainmergeconflict.ui.trees.listeners.ConflictsTreeSelectionListener;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
@@ -17,8 +17,6 @@ import org.ualberta.smr.explainmergeconflict.utils.ConflictsTreeUtils;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import javax.swing.*;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
@@ -51,7 +49,6 @@ public class ExplanationsToolWindow implements DumbAware {
         this.project = project;
         this.repo = repo;
         init();
-        updateUI();
     }
 
     private void init() {
@@ -67,6 +64,7 @@ public class ExplanationsToolWindow implements DumbAware {
                 }
             }
         });
+        updateUI();
     }
 
     private void updateUI() {
@@ -74,7 +72,7 @@ public class ExplanationsToolWindow implements DumbAware {
         // If viewing an actual conflict file, render all panels including the trees. Otherwise, remove it,
         if (Utils.isConflictFile(file)) {
             // TODO - find a way to only set regions if conflict regions are not registered!
-            ConflictRegionController.setConflictRegionsForFile(project, repo, file);
+            ConflictRegionUtils.registerConflictsForFile(project, repo, file);
             setNewTreeModelForCurrentFile();
             bodyPanel.setVisible(true);
             textPaneHeader.setText("<NUMBER> conflict regions were found in file " + file.getName());
@@ -111,7 +109,10 @@ public class ExplanationsToolWindow implements DumbAware {
         return explanationsToolWindowContent;
     }
 
-    // Needed for Custom Create components declared through GUI Designer
+    /**
+     * Initializes components with Custom Create enabled. This function is called in the constructor after tool window
+     * attributes are initialized.
+     */
     private void createUIComponents() {
         /*
          * Trees is JetBrains's implementation of JTree. Due to UI issues using JetBrain's Tree with
@@ -121,19 +122,12 @@ public class ExplanationsToolWindow implements DumbAware {
          */
         // TODO - custom create scrollpaneoursright, scrollpanetheirsright
 
-        // Ours
-        // TODO - separate function for this
-        // TODO - call this update CRs functionality elsewhere
         // Upon initialization, the file editor manager listener will not trigger if registered within the tool window
         // Until the listener is registered in plugin.xml, we will need to call our utils method to read file for now
         file = Utils.getCurrentFileFromEditor(project);
 
-        // FIXME - find a way to make us call this automatically without having to call this manually several times
-        ConflictRegionController.setConflictRegionsForFile(project, repo, file);
-
+        // Ours
         treeOurs = new JTree();
-        setNewTreeModelForCurrentFile();
-
         scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
         treeOurs.addTreeSelectionListener(new ConflictsTreeSelectionListener(treeOurs, project, file));

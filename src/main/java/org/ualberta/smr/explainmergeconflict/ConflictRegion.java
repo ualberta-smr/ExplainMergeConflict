@@ -2,21 +2,19 @@ package org.ualberta.smr.explainmergeconflict;
 
 import com.intellij.openapi.vfs.VirtualFile;
 
-import java.util.ArrayList;
-
 public class ConflictRegion {
-    private VirtualFile file;
-    private int startLine;
-    private int length;
-//    private ConflictSubRegion p1;
-//    private ConflictSubRegion p2;
+    private final VirtualFile file;
+    private final int startLine;
+    private final int length;
+    private final ConflictSubRegion p1;
+    private final ConflictSubRegion p2;
 
-    public ConflictRegion(VirtualFile file, ArrayList<Integer> lineNumPair) {
+    public ConflictRegion(VirtualFile file, int startLine, int length, ConflictSubRegion p1, ConflictSubRegion p2) {
         this.file = file;
-        this.startLine = lineNumPair.get(0);
-        this.length = lineNumPair.get(1);
-//        this.p1 = p1;
-//        this.p2 = p2;
+        this.startLine = startLine;
+        this.length = length;
+        this.p1 = p1;
+        this.p2 = p2;
     }
 
     public VirtualFile getFile() {
@@ -31,11 +29,11 @@ public class ConflictRegion {
         return length;
     }
 
-//    public ConflictSubRegion getP1() {
-//        return p1;
-//    }
-//
-//    public ConflictSubRegion getP2() {
-//        return p2;
-//    }
+    public ConflictSubRegion getP1() {
+        return p1;
+    }
+
+    public ConflictSubRegion getP2() {
+        return p2;
+    }
 }

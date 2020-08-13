@@ -1,6 +1,7 @@
 package org.ualberta.smr.explainmergeconflict.utils;
 
 import com.intellij.openapi.vfs.VirtualFile;
+import org.jetbrains.annotations.NotNull;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.ConflictRegion;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
@@ -12,7 +13,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 
 public class ConflictsTreeUtils {
-    public static DefaultMutableTreeNode createRootAndChildren(ConflictNode rootNode, VirtualFile file) {
+    public static DefaultMutableTreeNode createRootAndChildren(@NotNull ConflictNode rootNode, @NotNull VirtualFile file) {
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootNode);
         ConflictFile conflictFile = MergeConflictService.getConflictFiles().get(file.getPath());

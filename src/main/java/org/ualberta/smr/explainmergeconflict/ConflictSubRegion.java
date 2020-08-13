@@ -1,17 +1,17 @@
 package org.ualberta.smr.explainmergeconflict;
 
 public class ConflictSubRegion {
-    private String ref;
-    private int startLine;
-    private int length;
+    private final Ref ref;
+    private final int startLine;
+    private final int length;
 
-    public ConflictSubRegion(String ref, int startLine, int length) {
+    public ConflictSubRegion(Ref ref, int startLine, int length) {
         this.ref = ref;
         this.startLine = startLine;
         this.length = length;
     }
 
-    public String getRef() {
+    public Ref getRef() {
         return ref;
     }
 
