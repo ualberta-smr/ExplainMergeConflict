@@ -130,7 +130,7 @@ public class ExplanationsToolWindow implements DumbAware {
         treeOurs = new JTree();
         scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
-        treeOurs.addTreeSelectionListener(new ConflictsTreeSelectionListener(treeOurs, project, file));
+        treeOurs.addTreeSelectionListener(new ConflictsTreeSelectionListener(treeOurs, project));
 
         // Theirs
 //        rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.theirs"));
