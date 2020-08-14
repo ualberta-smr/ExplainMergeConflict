@@ -6,12 +6,14 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vfs.VirtualFile;
 import git4idea.commands.Git;
 import git4idea.commands.GitCommand;
 import git4idea.commands.GitCommandResult;
 import git4idea.commands.GitLineHandler;
 import git4idea.repo.GitRepository;
+import kotlin.Triple;
 import org.jetbrains.annotations.NotNull;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.ConflictRegion;
@@ -74,7 +76,7 @@ public class ConflictRegionUtils {
 
     /**
      * Initialize and register {@link ConflictRegion}s for the currently opened file under {@link ConflictFile}.
-     * @param output git diff command output.
+     * @param output git diff command output
      * @param file current file
      */
     private static void registerConflictRegions(List<String> output, VirtualFile file) {
@@ -86,26 +88,26 @@ public class ConflictRegionUtils {
         List<ConflictRegion> conflictRegionList = new ArrayList<>();
 
         // Create new ConflictRegion instances and initialize the appropriate data for each one
-        final int regionIndex = 0;
-        final int p1Index = 1;
-        final int p2Index = 2;
-
         for (String region: filteredList) {
-            List<List<Integer>> pairs = parseAndFindPairsForConflictRegion(region, file);
+            Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> pairs = parseAndFindPairsForConflictRegion(region, file);
+            Pair<Integer,Integer> regionPair = pairs.getFirst();
+            Pair<Integer,Integer> p1Pair = pairs.getSecond();
+            Pair<Integer,Integer> p2Pair = pairs.getThird();
+
             ConflictSubRegion p1 = new ConflictSubRegion(
                     Ref.HEAD,
-                    pairs.get(p1Index).get(0),
-                    pairs.get(p1Index).get(1)
+                    p1Pair.getFirst(),
+                    p1Pair.getSecond()
             );
             ConflictSubRegion p2 = new ConflictSubRegion(
                     Ref.MERGE_HEAD,
-                    pairs.get(p2Index).get(0),
-                    pairs.get(p2Index).get(1)
+                    p2Pair.getFirst(),
+                    p2Pair.getSecond()
             );
             ConflictRegion conflictRegion = new ConflictRegion(
                     file,
-                    pairs.get(regionIndex).get(0),
-                    pairs.get(regionIndex).get(1),
+                    regionPair.getFirst(),
+                    regionPair.getSecond(),
                     p1,
                     p2
             );
@@ -122,7 +124,7 @@ public class ConflictRegionUtils {
 
     /**
      * Parses through the git diff output from the git handler and gets the appropriate start line numbers and length
-     * data for p1, p2, and the entire conflict region.
+     * data for p1, p2, and the entire conflict region
      *
      * Example:
      *
@@ -140,13 +142,13 @@ public class ConflictRegionUtils {
      *
      * @param region conflict region line data in output
      * @param file current file
-     * @return list of integer ArrayLists containing the conflict region pair, p1 pair, and p2 pair respectively
+     * @return {@link Triple} instance containing conflict region pair, p1 pair, and p2 pair
+     * (each as {@link Pair}<Integer, Integer> respectively)
      */
-    private static List<List<Integer>> parseAndFindPairsForConflictRegion(String region, VirtualFile file) {
-        List<List<Integer>> pairs = new ArrayList<>();
-        List<Integer> regionPair = new ArrayList<>();
-        List<Integer> p1Pair = new ArrayList<>();
-        List<Integer> p2Pair = new ArrayList<>();
+    private static Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> parseAndFindPairsForConflictRegion(String region, VirtualFile file) {
+        Pair<Integer, Integer> regionPair = null;
+        Pair<Integer, Integer> p1Pair = null;
+        Pair<Integer, Integer> p2Pair = null;
         Pattern pattern;
         Matcher matcher;
 
@@ -160,20 +162,24 @@ public class ConflictRegionUtils {
                     .trim();
             regionPair = convertPair(pair);
         }
+        assert regionPair != null;
 
         // Get p1 pair
         pattern = Pattern.compile("@\\s[-+]\\d+,\\d");
         matcher = pattern.matcher(region);
+
         if (matcher.find()) {
             String pair = matcher.group()
                     .replaceAll("@\\s[-+]", "")
                     .trim();
             p1Pair = convertPair(pair);
         }
+        assert p1Pair != null;
 
         // Get p2 pair
         pattern = Pattern.compile("\\d\\s[-+]\\d+,\\d+\\s[-+]");
         matcher = pattern.matcher(region);
+
         if (matcher.find()) {
             // Extract "x,"
             String pairLeft = matcher.group()
@@ -188,12 +194,9 @@ public class ConflictRegionUtils {
 
             p2Pair = convertPair(pairLeft + pairRight);
         }
+        assert p2Pair != null;
 
-        pairs.add(regionPair);
-        pairs.add(p1Pair);
-        pairs.add(p2Pair);
-
-        return pairs;
+        return new Triple<>(regionPair, p1Pair, p2Pair);
     }
 
     /**
@@ -203,11 +206,11 @@ public class ConflictRegionUtils {
      * x = start line number of the (sub)conflict region
      * y = of the (sub)conflict region
      *
-     * @param pair String formatted as "x,y" where x is the startLine of the conflict region and y is its length.
-     * @return an integer ArrayList containing the conflict region startLine as an integer on index 0, and the conflict
-     * region length as an integer on index 1.
+     * @param pair String formatted as "x,y" where x is the startLine of the conflict region and y is its length
+     * @return an {@link Pair}<Integer, Integer> containing the conflict region startLine as an integer on index 0,
+     * and the conflict region length as an integer on index 1
      */
-    private static ArrayList<Integer> convertPair(String pair) {
+    private static Pair<Integer, Integer> convertPair(String pair) {
         int startLine = 0;
         int length = 0;
         Pattern pattern;
@@ -229,9 +232,7 @@ public class ConflictRegionUtils {
             length = Integer.parseInt(lengthStr);
         }
 
-        ArrayList<Integer> newPair = new ArrayList<>();
-        newPair.add(0, startLine);
-        newPair.add(1, length);
+        Pair<Integer, Integer> newPair = new Pair<>(startLine, length);
 
         return newPair;
     }
@@ -241,7 +242,7 @@ public class ConflictRegionUtils {
      * conflict regions. The function will fail if the file is not registered as a valid key for MergeConflictService's
      * conflict file hashmap.
      * @param file conflict file
-     * @return true if conflict regions are initialized for the current file under MergeConflictService; otherwise false.
+     * @return true if conflict regions are initialized for the current file under MergeConflictService; otherwise false
      */
     private static boolean isConflictRegionProperlyInitialized(VirtualFile file) {
         HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getConflictFiles();
@@ -259,7 +260,7 @@ public class ConflictRegionUtils {
      * @param project current project
      * @param file currently viewed file
      * @param nodeIndex index of the currently selected conflict node in ours/theirs tree. Order of conflict regions in
-     *                  the tree is the same as the order of conflict regions under {@link MergeConflictService}.
+     *                  the tree is the same as the order of conflict regions under {@link MergeConflictService}
      */
     private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file, @NotNull int nodeIndex) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
