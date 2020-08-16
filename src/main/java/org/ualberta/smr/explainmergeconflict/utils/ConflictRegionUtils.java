@@ -10,6 +10,7 @@ import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.vcs.log.TimedVcsCommit;
+import git4idea.GitUtil;
 import git4idea.commands.Git;
 import git4idea.commands.GitCommand;
 import git4idea.commands.GitCommandResult;
@@ -18,10 +19,7 @@ import git4idea.history.GitHistoryUtils;
 import git4idea.repo.GitRepository;
 import kotlin.Triple;
 import org.jetbrains.annotations.NotNull;
-import org.ualberta.smr.explainmergeconflict.ConflictFile;
-import org.ualberta.smr.explainmergeconflict.ConflictRegion;
-import org.ualberta.smr.explainmergeconflict.ConflictSubRegion;
-import org.ualberta.smr.explainmergeconflict.Ref;
+import org.ualberta.smr.explainmergeconflict.*;
 import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
 
 import java.util.*;
@@ -73,6 +71,14 @@ public class ConflictRegionUtils {
                 List<String> resultList = result.getOutput();
 
                 registerConflictRegions(resultList, file);
+
+                // FIXME - temp code
+                List<ConflictRegion> regions = MergeConflictService.getConflictFiles().get(file.getPath()).getConflictRegions();
+                for (int i = 0; i < regions.size(); i++) {
+                    System.out.println("Conflict Region " + Integer.toString(i+1));
+                    registerCommitsForConflictRegionInFile(project, repo, file, GitUtil.HEAD, regions.get(i));
+                    registerCommitsForConflictRegionInFile(project, repo, file, GitUtil.MERGE_HEAD, regions.get(i));
+                }
             }
         });
     }
@@ -279,31 +285,45 @@ public class ConflictRegionUtils {
     private static void registerCommitsForConflictRegionInFile(@NotNull Project project, @NotNull GitRepository repo,
                                                           @NotNull VirtualFile file, @NotNull String ref,
                                                           @NotNull ConflictRegion region) {
-        // TODO - to be used by git log trees in git window
+        // TODO - to be used by git log trees in git window. Temporarily display commits as stdout.
 
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "explainmergeconflict: reading all commits for conflict region", false) {
-            @Override
-            public void run(@NotNull ProgressIndicator indicator) {
-                // Run git log <ref> <startLine, endLine>:<file path>
-                try {
-                    /*
-                     * No logs would be recorded with these specific parameters when running GitHistoryUtils#history or
-                     * GitHistoryUtils#loadDetails. GitHistoryUtils#collectVcsMetadata does not permit option parameters
-                     * since it runs in stdin mode. Thus, the only method in GitHistoryUtils that actually works with
-                     * these params is collectTimedCommits.
-                     *
-                     * To avoid the need to manually parse through git log output using regex, we will use
-                     * collectTimedCommits to quickly find the commit ids of relevant commits. We can then use these ids
-                     * as parameters for other methods if needed.
-                     */
-                    String lines = region.getStartLine() + ",+" + region.getLength();
-                    List<? extends TimedVcsCommit> commits = GitHistoryUtils.collectTimedCommits(project,
-                            repo.getRoot(), ref, "-L"+lines+":"+file.getPath());
-                } catch (VcsException e) {
-                    e.printStackTrace();
+        // Run git log <ref> <startLine, endLine>:<file path>
+        try {
+            /*
+             * No logs would be recorded with these specific parameters when running GitHistoryUtils#history or
+             * GitHistoryUtils#loadDetails. GitHistoryUtils#collectVcsMetadata does not permit option parameters
+             * since it runs in stdin mode. Thus, the only method in GitHistoryUtils that actually works with
+             * these params is collectTimedCommits.
+             *
+             * To avoid the need to manually parse through git log output using regex, we will use
+             * collectTimedCommits to quickly find the commit ids of relevant commits. We can then use these ids
+             * as parameters for other methods if needed.
+             */
+//            String lines = region.getStartLine() + ",+" + region.getLength();
+
+            String lines;
+            if (ref.equals(GitUtil.HEAD)) {
+                if (region.getP1().getLength() == 0) {
+                    throw new ConflictRegionIsEmptyException();
                 }
+                lines = region.getP1().getStartLine() + ",+" + region.getP1().getLength();
+            } else {
+                if (region.getP2().getLength() == 0) {
+                    throw new ConflictRegionIsEmptyException();
+                }
+                lines = region.getP2().getStartLine() + ",+" + region.getP2().getLength();
             }
-        });
+            List<? extends TimedVcsCommit> commits = GitHistoryUtils.collectTimedCommits(project,
+                    repo.getRoot(), ref, "-L"+lines+":"+file.getPath());
+            System.out.println("REF: " + ref);
+            for (TimedVcsCommit commit: commits) {
+                System.out.println(commit.getId());
+            }
+        } catch (ConflictRegionIsEmptyException e) {
+            System.out.println("Conflict region for ref " + ref + " in file " + file.getPath() + " is empty. Unable to retrieve commit history for this file.");
+        } catch (VcsException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void getOverlappingCommits() {

@@ -27,6 +27,8 @@ public class ConflictsTreeSelectionListener implements TreeSelectionListener {
 
         // If null, our listener was triggered when selecting a node and then moving to another conflict file.
         if (node == null) return;
+        // If null, root node was selected. Ignore node.
+        if (node.getParent() == null) return;
 
         VirtualFile file = Utils.getCurrentFileFromEditor(project);
         ConflictNode object = (ConflictNode) node.getUserObject();
