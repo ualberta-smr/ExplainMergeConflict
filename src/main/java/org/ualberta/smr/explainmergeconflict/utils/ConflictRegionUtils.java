@@ -286,10 +286,9 @@ public class ConflictRegionUtils {
                                                           @NotNull VirtualFile file, @NotNull String ref,
                                                           @NotNull ConflictRegion region) {
         // TODO - to be used by git log trees in git window. Temporarily display commits as stdout.
-
-        // Run git log <ref> <startLine, endLine>:<file path>
         try {
             /*
+            * Run git log <ref> -L<startLine>,<endLine>:<file path>
              * No logs would be recorded with these specific parameters when running GitHistoryUtils#history or
              * GitHistoryUtils#loadDetails. GitHistoryUtils#collectVcsMetadata does not permit option parameters
              * since it runs in stdin mode. Thus, the only method in GitHistoryUtils that actually works with
@@ -299,8 +298,6 @@ public class ConflictRegionUtils {
              * collectTimedCommits to quickly find the commit ids of relevant commits. We can then use these ids
              * as parameters for other methods if needed.
              */
-//            String lines = region.getStartLine() + ",+" + region.getLength();
-
             String lines;
             if (ref.equals(GitUtil.HEAD)) {
                 if (region.getP1().getLength() == 0) {
