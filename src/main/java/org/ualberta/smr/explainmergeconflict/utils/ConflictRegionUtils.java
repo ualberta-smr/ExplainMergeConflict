@@ -7,11 +7,14 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
+import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.vcs.log.TimedVcsCommit;
 import git4idea.commands.Git;
 import git4idea.commands.GitCommand;
 import git4idea.commands.GitCommandResult;
 import git4idea.commands.GitLineHandler;
+import git4idea.history.GitHistoryUtils;
 import git4idea.repo.GitRepository;
 import kotlin.Triple;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +35,7 @@ public class ConflictRegionUtils {
         runDiffForFileAndThenUpdate(project, repo, file);
     }
 
-    public static void showConflictRegionInEditor(@NotNull Project project, @NotNull VirtualFile file, @NotNull int nodeIndex) {
+    public static void showConflictRegionInEditor(@NotNull Project project, @NotNull VirtualFile file, int nodeIndex) {
         assert isConflictRegionProperlyInitialized(file);
         updateDescriptor(project, file, nodeIndex);
     }
@@ -44,7 +47,7 @@ public class ConflictRegionUtils {
      * @param repo current Git repository
      * @param file currently opened file
      */
-    private static void runDiffForFileAndThenUpdate(Project project, GitRepository repo, VirtualFile file) {
+    private static void runDiffForFileAndThenUpdate(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
         /*
          * Rather than running the git command asynchronously as a background task, we should instead run it synchronously
          * so that we don't face any race conditions - particularly, when we try to read conflict file data while it
@@ -79,7 +82,7 @@ public class ConflictRegionUtils {
      * @param output git diff command output
      * @param file current file
      */
-    private static void registerConflictRegions(List<String> output, VirtualFile file) {
+    private static void registerConflictRegions(@NotNull List<String> output, @NotNull VirtualFile file) {
         ArrayList<String> filteredList = new ArrayList<>(output);
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
 
@@ -89,7 +92,7 @@ public class ConflictRegionUtils {
 
         // Create new ConflictRegion instances and initialize the appropriate data for each one
         for (String region: filteredList) {
-            Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> pairs = parseAndFindPairsForConflictRegion(region, file);
+            Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> pairs = parseAndFindPairsForConflictRegion(region);
             Pair<Integer,Integer> regionPair = pairs.getFirst();
             Pair<Integer,Integer> p1Pair = pairs.getSecond();
             Pair<Integer,Integer> p2Pair = pairs.getThird();
@@ -141,11 +144,10 @@ public class ConflictRegionUtils {
      * Return = [[1,5], [1,1], [1,1]]
      *
      * @param region conflict region line data in output
-     * @param file current file
      * @return {@link Triple} instance containing conflict region pair, p1 pair, and p2 pair
      * (each as {@link Pair}<Integer, Integer> respectively)
      */
-    private static Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> parseAndFindPairsForConflictRegion(String region, VirtualFile file) {
+    private static Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> parseAndFindPairsForConflictRegion(@NotNull String region) {
         Pair<Integer, Integer> regionPair = null;
         Pair<Integer, Integer> p1Pair = null;
         Pair<Integer, Integer> p2Pair = null;
@@ -210,7 +212,7 @@ public class ConflictRegionUtils {
      * @return an {@link Pair}<Integer, Integer> containing the conflict region startLine as an integer on index 0,
      * and the conflict region length as an integer on index 1
      */
-    private static Pair<Integer, Integer> convertPair(String pair) {
+    private static Pair<Integer, Integer> convertPair(@NotNull String pair) {
         int startLine = 0;
         int length = 0;
         Pattern pattern;
@@ -232,9 +234,7 @@ public class ConflictRegionUtils {
             length = Integer.parseInt(lengthStr);
         }
 
-        Pair<Integer, Integer> newPair = new Pair<>(startLine, length);
-
-        return newPair;
+        return new Pair<>(startLine, length);
     }
 
     /**
@@ -244,7 +244,7 @@ public class ConflictRegionUtils {
      * @param file conflict file
      * @return true if conflict regions are initialized for the current file under MergeConflictService; otherwise false
      */
-    private static boolean isConflictRegionProperlyInitialized(VirtualFile file) {
+    private static boolean isConflictRegionProperlyInitialized(@NotNull VirtualFile file) {
         HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getConflictFiles();
         String key = file.getPath();
         assert conflictFiles.containsKey(key);
@@ -262,7 +262,7 @@ public class ConflictRegionUtils {
      * @param nodeIndex index of the currently selected conflict node in ours/theirs tree. Order of conflict regions in
      *                  the tree is the same as the order of conflict regions under {@link MergeConflictService}
      */
-    private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file, @NotNull int nodeIndex) {
+    private static void updateDescriptor(@NotNull Project project, @NotNull VirtualFile file, int nodeIndex) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -274,5 +274,42 @@ public class ConflictRegionUtils {
                 descriptor.navigateInEditor(project, true);
             }
         });
+    }
+
+    private static void registerCommitsForConflictRegionInFile(@NotNull Project project, @NotNull GitRepository repo,
+                                                          @NotNull VirtualFile file, @NotNull String ref,
+                                                          @NotNull ConflictRegion region) {
+        // TODO - to be used by git log trees in git window
+
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "explainmergeconflict: reading all commits for conflict region", false) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                // Run git log <ref> <startLine, endLine>:<file path>
+                try {
+                    /*
+                     * No logs would be recorded with these specific parameters when running GitHistoryUtils#history or
+                     * GitHistoryUtils#loadDetails. GitHistoryUtils#collectVcsMetadata does not permit option parameters
+                     * since it runs in stdin mode. Thus, the only method in GitHistoryUtils that actually works with
+                     * these params is collectTimedCommits.
+                     *
+                     * To avoid the need to manually parse through git log output using regex, we will use
+                     * collectTimedCommits to quickly find the commit ids of relevant commits. We can then use these ids
+                     * as parameters for other methods if needed.
+                     */
+                    String lines = region.getStartLine() + ",+" + region.getLength();
+                    List<? extends TimedVcsCommit> commits = GitHistoryUtils.collectTimedCommits(project,
+                            repo.getRoot(), ref, "-L"+lines+":"+file.getPath());
+                } catch (VcsException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private static void getOverlappingCommits() {
+        // TODO - to be used by git log trees in git window
+        // for each CR commit, if CR.p1.startLine == CR.p1.startLine
+        // note that this algorithm will only read the textual differences; no functionality for detecting semantic
+        // differences for now
     }
 }
