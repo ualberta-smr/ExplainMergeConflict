@@ -3,6 +3,10 @@ package org.ualberta.smr.explainmergeconflict.services;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.VcsException;
+import com.intellij.openapi.vfs.VirtualFile;
+import git4idea.GitUtil;
+import git4idea.history.GitHistoryUtils;
 import git4idea.repo.GitConflict;
 import git4idea.repo.GitRepository;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
@@ -11,14 +15,27 @@ import org.ualberta.smr.explainmergeconflict.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public final class MergeConflictService implements Disposable {
     private static final HashMap<String, ConflictFile> conflictFilesMap = new HashMap<>();
+    private static String baseRevId;
     private final Project project;
 
     public MergeConflictService(Project project) {
         this.project = project;
+
+        try {
+            GitRepository repo = Objects.requireNonNull(Utils.getCurrentRepository(project));
+            baseRevId = Objects.requireNonNull(GitHistoryUtils.getMergeBase(
+                    project,
+                    repo.getRoot(),
+                    GitUtil.HEAD,
+                    GitUtil.MERGE_HEAD)).getRev();
+        } catch (VcsException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -41,6 +58,10 @@ public final class MergeConflictService implements Disposable {
             );
             conflictFilesMap.put(conflict.getFilePath().toString(), conflictFile);
         }
+    }
+
+    public static String getBaseRevId() {
+        return baseRevId;
     }
 
     public static HashMap<String, ConflictFile> getConflictFiles() {

@@ -288,7 +288,7 @@ public class ConflictRegionUtils {
         // TODO - to be used by git log trees in git window. Temporarily display commits as stdout.
         try {
             /*
-            * Run git log <ref> -L<startLine>,<endLine>:<file path>
+            * Run git log <ref> -L<startLine>,<endLine>:<file path> <common ancestor>..<current revision>
              * No logs would be recorded with these specific parameters when running GitHistoryUtils#history or
              * GitHistoryUtils#loadDetails. GitHistoryUtils#collectVcsMetadata does not permit option parameters
              * since it runs in stdin mode. Thus, the only method in GitHistoryUtils that actually works with
@@ -300,6 +300,11 @@ public class ConflictRegionUtils {
              */
             String lines;
             if (ref.equals(GitUtil.HEAD)) {
+                /*
+                 * Length = 0 means that the p1 or p2 sub conflict region is empty. This is still valid however, for it
+                 * is still important information within a conflict region to consider when resolving merge conflicts.
+                 * Empty conflict regions also vary from a file to file basis depending on the types of changes made.
+                 */
                 if (region.getP1().getLength() == 0) {
                     throw new ConflictRegionIsEmptyException();
                 }
@@ -310,13 +315,18 @@ public class ConflictRegionUtils {
                 }
                 lines = region.getP2().getStartLine() + ",+" + region.getP2().getLength();
             }
-            List<? extends TimedVcsCommit> commits = GitHistoryUtils.collectTimedCommits(project,
-                    repo.getRoot(), ref, "-L"+lines+":"+file.getPath());
+
+            List<? extends TimedVcsCommit> commits = GitHistoryUtils.collectTimedCommits(
+                    project,
+                    repo.getRoot(),
+                    "-L" + lines + ":" + file.getPath(),
+                    MergeConflictService.getBaseRevId() + ".." + ref);
             System.out.println("REF: " + ref);
             for (TimedVcsCommit commit: commits) {
                 System.out.println(commit.getId());
             }
         } catch (ConflictRegionIsEmptyException e) {
+            // TODO - display this in GUI
             System.out.println("Conflict region for ref " + ref + " in file " + file.getPath() + " is empty. Unable to retrieve commit history for this file.");
         } catch (VcsException e) {
             e.printStackTrace();
@@ -325,7 +335,7 @@ public class ConflictRegionUtils {
 
     private static void getOverlappingCommits() {
         // TODO - to be used by git log trees in git window
-        // for each CR commit, if CR.p1.startLine == CR.p1.startLine
+        // for each CR, get p1 commit log and p2 commit log. If p1 <= p2 (and vice versa), there is overlap.
         // note that this algorithm will only read the textual differences; no functionality for detecting semantic
         // differences for now
     }
