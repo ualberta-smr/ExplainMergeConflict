@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.vcs.log.Hash;
 import com.intellij.vcs.log.TimedVcsCommit;
 import git4idea.GitUtil;
 import git4idea.commands.Git;
@@ -40,21 +41,14 @@ public class ConflictRegionUtils {
 
     /**
      * Runs the git diff command using {@link GitLineHandler} and reads the stdout output for additional parsing to find
-     * conflict region data.
+     * conflict region data. Once the output is parsed, register the conflict regions to {@link MergeConflictService}.
+     * This command is run synchronously to ensure we initialize all conflict regions for the currently opened file
+     * before trying to access them in the UI (i.e. Explain Merge Conflict tool window).
      * @param project current project
      * @param repo current Git repository
      * @param file currently opened file
      */
     private static void runDiffForFileAndThenUpdate(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
-        /*
-         * Rather than running the git command asynchronously as a background task, we should instead run it synchronously
-         * so that we don't face any race conditions - particularly, when we try to read conflict file data while it
-         * hasn't been processed yet. We do this using Task.Modal rather than Task.Backgroundable.
-         *
-         * For example, when we launch the Explain Merge Conflict tool window after running the show action, let the
-         * tool window wait for the git handler to resolve so that we have data to show. Otherwise, we will display an
-         * empty tree despite having already had initialized the conflict file data.
-         */
         ProgressManager.getInstance().run(new Task.Modal(project, "explainmergeconflict: running git diff to detect conflict regions" + project.getName(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -70,15 +64,7 @@ public class ConflictRegionUtils {
                 GitCommandResult result = Git.getInstance().runCommand(h);
                 List<String> resultList = result.getOutput();
 
-                registerConflictRegions(resultList, file);
-
-                // FIXME - temp code
-                List<ConflictRegion> regions = MergeConflictService.getConflictFiles().get(file.getPath()).getConflictRegions();
-                for (int i = 0; i < regions.size(); i++) {
-                    System.out.println("Conflict Region " + Integer.toString(i+1));
-                    registerCommitsForConflictRegionInFile(project, repo, file, GitUtil.HEAD, regions.get(i));
-                    registerCommitsForConflictRegionInFile(project, repo, file, GitUtil.MERGE_HEAD, regions.get(i));
-                }
+                registerConflictRegions(project, repo, file, resultList);
             }
         });
     }
@@ -88,7 +74,7 @@ public class ConflictRegionUtils {
      * @param output git diff command output
      * @param file current file
      */
-    private static void registerConflictRegions(@NotNull List<String> output, @NotNull VirtualFile file) {
+    private static void registerConflictRegions(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file, @NotNull List<String> output) {
         ArrayList<String> filteredList = new ArrayList<>(output);
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
 
@@ -96,22 +82,30 @@ public class ConflictRegionUtils {
 
         List<ConflictRegion> conflictRegionList = new ArrayList<>();
 
-        // Create new ConflictRegion instances and initialize the appropriate data for each one
+        // Triple represents the three pair of hunks data
         for (String region: filteredList) {
             Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> pairs = parseAndFindPairsForConflictRegion(region);
             Pair<Integer,Integer> regionPair = pairs.getFirst();
             Pair<Integer,Integer> p1Pair = pairs.getSecond();
             Pair<Integer,Integer> p2Pair = pairs.getThird();
 
+            // Get list of commits that modified p1 and p2
+            List<Hash> p1Commits = getCommitIdsForRegionInFile(project, repo, file, GitUtil.HEAD, p1Pair);
+            List<Hash> p2Commits = getCommitIdsForRegionInFile(project, repo, file, GitUtil.MERGE_HEAD, p2Pair);
+            assert p1Commits != null;
+            assert p2Commits != null;
+
             ConflictSubRegion p1 = new ConflictSubRegion(
                     Ref.HEAD,
                     p1Pair.getFirst(),
-                    p1Pair.getSecond()
+                    p1Pair.getSecond(),
+                    p1Commits
             );
             ConflictSubRegion p2 = new ConflictSubRegion(
                     Ref.MERGE_HEAD,
                     p2Pair.getFirst(),
-                    p2Pair.getSecond()
+                    p2Pair.getSecond(),
+                    p2Commits
             );
             ConflictRegion conflictRegion = new ConflictRegion(
                     file,
@@ -123,9 +117,10 @@ public class ConflictRegionUtils {
             conflictRegionList.add(conflictRegion);
         }
 
+        assert !conflictRegionList.isEmpty();
+        // Access conflict files hashmap in MergeConflictService and update their values with the new conflict classes
         HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getConflictFiles();
         ConflictFile conflictFile = conflictsMap.get(file.getPath());
-        assert !conflictRegionList.isEmpty();
         conflictFile.setConflictRegions(conflictRegionList);
         // TODO simplify setting conflict files and remove repetition
         MergeConflictService.getConflictFiles().replace(file.getPath(), conflictFile);
@@ -282,13 +277,21 @@ public class ConflictRegionUtils {
         });
     }
 
-    private static void registerCommitsForConflictRegionInFile(@NotNull Project project, @NotNull GitRepository repo,
+    /**
+     * Gets the git commit history for the p1 and p2 regions of a conflict region by running
+     * {@code git log <ref> -L<startLine>,<endLine>:<filePath> <commonAncestor>..<ref>}.
+     * @param project current project
+     * @param repo current git repository
+     * @param file currently opened file
+     * @param ref HEAD or MERGE_HEAD reference
+     * @param pair p1 or p2 pair hunk data
+     * @return list of commit {@link Hash}s
+     */
+    private static List<Hash> getCommitIdsForRegionInFile(@NotNull Project project, @NotNull GitRepository repo,
                                                           @NotNull VirtualFile file, @NotNull String ref,
-                                                          @NotNull ConflictRegion region) {
-        // TODO - to be used by git log trees in git window. Temporarily display commits as stdout.
+                                                          @NotNull Pair<Integer, Integer> pair) {
         try {
             /*
-            * Run git log <ref> -L<startLine>,<endLine>:<file path> <common ancestor>..<current revision>
              * No logs would be recorded with these specific parameters when running GitHistoryUtils#history or
              * GitHistoryUtils#loadDetails. GitHistoryUtils#collectVcsMetadata does not permit option parameters
              * since it runs in stdin mode. Thus, the only method in GitHistoryUtils that actually works with
@@ -299,38 +302,37 @@ public class ConflictRegionUtils {
              * as parameters for other methods if needed.
              */
             String lines;
-            if (ref.equals(GitUtil.HEAD)) {
-                /*
-                 * Length = 0 means that the p1 or p2 sub conflict region is empty. This is still valid however, for it
-                 * is still important information within a conflict region to consider when resolving merge conflicts.
-                 * Empty conflict regions also vary from a file to file basis depending on the types of changes made.
-                 */
-                if (region.getP1().getLength() == 0) {
-                    throw new ConflictRegionIsEmptyException();
-                }
-                lines = region.getP1().getStartLine() + ",+" + region.getP1().getLength();
-            } else {
-                if (region.getP2().getLength() == 0) {
-                    throw new ConflictRegionIsEmptyException();
-                }
-                lines = region.getP2().getStartLine() + ",+" + region.getP2().getLength();
+            /*
+             * Length = 0 means that the p1 or p2 sub conflict region is empty. This is still valid however, for it
+             * is still important information within a conflict region to consider when resolving merge conflicts.
+             * Empty conflict regions also vary from a file to file basis depending on the types of changes made.
+             */
+            if (pair.getSecond() == 0) {
+                throw new ConflictRegionIsEmptyException();
             }
 
+            lines = pair.getFirst() + ",+" + pair.getSecond();
+            List<Hash> commitsIds = new ArrayList<>();
             List<? extends TimedVcsCommit> commits = GitHistoryUtils.collectTimedCommits(
                     project,
                     repo.getRoot(),
                     "-L" + lines + ":" + file.getPath(),
                     MergeConflictService.getBaseRevId() + ".." + ref);
-            System.out.println("REF: " + ref);
+
+            assert !commits.isEmpty();
+
             for (TimedVcsCommit commit: commits) {
-                System.out.println(commit.getId());
+                commitsIds.add(commit.getId());
             }
+
+            return commitsIds;
         } catch (ConflictRegionIsEmptyException e) {
             // TODO - display this in GUI
             System.out.println("Conflict region for ref " + ref + " in file " + file.getPath() + " is empty. Unable to retrieve commit history for this file.");
         } catch (VcsException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
     private static void getOverlappingCommits() {

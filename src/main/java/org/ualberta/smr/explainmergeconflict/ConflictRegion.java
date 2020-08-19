@@ -1,6 +1,7 @@
 package org.ualberta.smr.explainmergeconflict;
 
 import com.intellij.openapi.vfs.VirtualFile;
+import org.jetbrains.annotations.NotNull;
 
 public class ConflictRegion {
     private final VirtualFile file;
@@ -9,7 +10,7 @@ public class ConflictRegion {
     private final ConflictSubRegion p1;
     private final ConflictSubRegion p2;
 
-    public ConflictRegion(VirtualFile file, int startLine, int length, ConflictSubRegion p1, ConflictSubRegion p2) {
+    public ConflictRegion(@NotNull VirtualFile file,int startLine, int length, @NotNull ConflictSubRegion p1, @NotNull ConflictSubRegion p2) {
         this.file = file;
         this.startLine = startLine;
         this.length = length;
