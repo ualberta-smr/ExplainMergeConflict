@@ -11,7 +11,6 @@ import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.vcs.log.Hash;
 import com.intellij.vcs.log.TimedVcsCommit;
-import git4idea.GitCommit;
 import git4idea.GitUtil;
 import git4idea.commands.Git;
 import git4idea.commands.GitCommand;
@@ -95,12 +94,6 @@ public class ConflictRegionUtils {
             List<Hash> p2Commits = getAllCommitIdsForRegionInFile(project, repo, file, GitUtil.MERGE_HEAD, p2Pair);
             assert p1Commits != null;
             assert p2Commits != null;
-
-            try {
-                getOverlappingCommits(project, repo, file, p1Pair, p2Pair);
-            } catch (VcsException e) {
-                e.printStackTrace();
-            }
 
             ConflictSubRegion p1 = new ConflictSubRegion(
                     Ref.HEAD,
@@ -340,74 +333,5 @@ public class ConflictRegionUtils {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private static void getOverlappingCommits(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file,
-                                              @NotNull Pair<Integer, Integer> p1Pair, @NotNull Pair<Integer, Integer> p2Pair) throws VcsException {
-        // TODO - to be used by git log trees in git window
-        int minLine;
-        int length;
-        String ref1;
-        String ref2 = null;
-        String base = MergeConflictService.getBaseRevId();
-        List<Hash> overlapCommits = new ArrayList<>();
-
-        // Decide if we should use p1 as minimum comparison
-        if (p1Pair.getFirst() <= p2Pair.getFirst()) {
-            boolean equals = p1Pair.getFirst().equals(p2Pair.getFirst());
-            // If p1 is empty, use p2 for comparison instead
-            if (p1Pair.getSecond() == 0) {
-                minLine = p2Pair.getFirst();
-                length = p2Pair.getSecond();
-                ref1 = GitUtil.MERGE_HEAD;
-            } else if (equals && (p2Pair.getSecond() < p1Pair.getSecond())) {
-                minLine = p2Pair.getFirst();
-                length = p2Pair.getSecond();
-                ref1 = GitUtil.MERGE_HEAD;
-                ref2 = GitUtil.HEAD;
-            } else {
-                minLine = p1Pair.getFirst();
-                length = p1Pair.getSecond();
-                ref1 = GitUtil.HEAD;
-                ref2 = GitUtil.MERGE_HEAD;
-            }
-        } else {
-            // If p2 is empty, use p1 for comparison instead
-            if (p2Pair.getSecond() == 0) {
-                minLine = p1Pair.getFirst();
-                length = p1Pair.getSecond();
-                ref1 = GitUtil.HEAD;
-            } else {
-                minLine = p2Pair.getFirst();
-                length = p2Pair.getSecond();
-                ref1 = GitUtil.MERGE_HEAD;
-                ref2 = GitUtil.HEAD;
-            }
-        }
-
-        String lines = minLine + "," + length;
-        List<? extends TimedVcsCommit> p1Commits = GitHistoryUtils.collectTimedCommits(
-                project,
-                repo.getRoot(),
-                "-L" + lines + ":" + file.getPath(), base + ".." + ref1);
-
-        System.out.println(lines);
-        System.out.println(file.getPath());
-        System.out.println("\nHERE ARE THE OVERLAPPING COMMITS FOR " + ref1);
-        for (TimedVcsCommit p1Commit: p1Commits) {
-            System.out.println(p1Commit.getId());
-        }
-
-        if (ref2 != null) {
-            List<? extends TimedVcsCommit> p2Commits = GitHistoryUtils.collectTimedCommits(
-                    project,
-                    repo.getRoot(),
-                    "-L" + lines + ":" + file.getPath(), base + ".." + ref2);
-
-            System.out.println("\nHERE ARE THE OVERLAPPING COMMITS FOR " + ref2);
-            for (TimedVcsCommit p2Commit: p2Commits) {
-                System.out.println(p2Commit.getId());
-            }
-        }
     }
 }
