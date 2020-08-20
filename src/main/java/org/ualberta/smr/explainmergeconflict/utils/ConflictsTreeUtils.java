@@ -1,5 +1,6 @@
 package org.ualberta.smr.explainmergeconflict.utils;
 
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
@@ -13,10 +14,10 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 
 public class ConflictsTreeUtils {
-    public static DefaultMutableTreeNode createRootAndChildren(@NotNull ConflictNode rootNode, @NotNull VirtualFile file) {
+    public static DefaultMutableTreeNode createRootAndChildren(@NotNull Project project, @NotNull VirtualFile file, @NotNull ConflictNode rootNode) {
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootNode);
-        ConflictFile conflictFile = MergeConflictService.getConflictFiles().get(file.getPath());
+        ConflictFile conflictFile = MergeConflictService.getInstance(project).getConflictFiles().get(file.getPath());
         List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
 
         // If this assertion fails, this means we have a race condition!

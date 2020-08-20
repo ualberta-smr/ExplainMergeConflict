@@ -27,7 +27,7 @@ public class ShowExplanationsToolWindowAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         GitRepository repo = Utils.getCurrentRepository(e.getProject());
 
-        if (Utils.isConflictFile(e.getData(CommonDataKeys.VIRTUAL_FILE))) {
+        if (Utils.isConflictFile(e.getProject(), e.getData(CommonDataKeys.VIRTUAL_FILE))) {
             UIController.updateToolWindowAfterAction(repo);
         } else {
             showPopup(e.getDataContext());

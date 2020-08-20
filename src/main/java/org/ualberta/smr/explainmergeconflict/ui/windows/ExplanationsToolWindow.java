@@ -70,7 +70,7 @@ public class ExplanationsToolWindow implements DumbAware {
     private void updateUI() {
         // TODO - bundle text
         // If viewing an actual conflict file, render all panels including the trees. Otherwise, remove it,
-        if (Utils.isConflictFile(file)) {
+        if (Utils.isConflictFile(project, file)) {
             // TODO - find a way to only set regions if conflict regions are not registered!
             ConflictRegionUtils.registerConflictsForFile(project, repo, file);
             setNewTreeModelForCurrentFile();
@@ -94,7 +94,7 @@ public class ExplanationsToolWindow implements DumbAware {
 
     private void setNewTreeModelForCurrentFile() {
         ConflictNode rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.ours"));
-        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
+        DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(project, file, rootNode);
         TreeModel model = new DefaultTreeModel(rootOurs);
         treeOurs.setModel(model);
     }

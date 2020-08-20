@@ -30,12 +30,12 @@ import java.util.regex.Pattern;
 public class ConflictRegionUtils {
 
     public static void registerConflictsForFile(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
-        assert Utils.isConflictFile(file);
+        assert Utils.isConflictFile(project, file);
         runDiffForFileAndThenUpdate(project, repo, file);
     }
 
     public static void showConflictRegionInEditor(@NotNull Project project, @NotNull VirtualFile file, int nodeIndex) {
-        assert isConflictRegionProperlyInitialized(file);
+        assert isConflictRegionProperlyInitialized(project, file);
         updateDescriptor(project, file, nodeIndex);
     }
 
@@ -119,11 +119,11 @@ public class ConflictRegionUtils {
 
         assert !conflictRegionList.isEmpty();
         // Access conflict files hashmap in MergeConflictService and update their values with the new conflict classes
-        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getConflictFiles();
+        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getInstance(project).getConflictFiles();
         ConflictFile conflictFile = conflictsMap.get(file.getPath());
         conflictFile.setConflictRegions(conflictRegionList);
         // TODO simplify setting conflict files and remove repetition
-        MergeConflictService.getConflictFiles().replace(file.getPath(), conflictFile);
+        MergeConflictService.getInstance(project).getConflictFiles().replace(file.getPath(), conflictFile);
     }
 
     /**
@@ -245,8 +245,8 @@ public class ConflictRegionUtils {
      * @param file conflict file
      * @return true if conflict regions are initialized for the current file under MergeConflictService; otherwise false
      */
-    private static boolean isConflictRegionProperlyInitialized(@NotNull VirtualFile file) {
-        HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getConflictFiles();
+    private static boolean isConflictRegionProperlyInitialized(@NotNull Project project, @NotNull VirtualFile file) {
+        HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
         String key = file.getPath();
         assert conflictFiles.containsKey(key);
         List<ConflictRegion> conflictRegions = conflictFiles.get(key).getConflictRegions();
@@ -267,7 +267,7 @@ public class ConflictRegionUtils {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
             public void run() {
-                HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getConflictFiles();
+                HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
                 List<ConflictRegion> conflictRegions = conflictFiles.get(file.getPath()).getConflictRegions();
                 int regionStartLine = conflictRegions.get(nodeIndex).getStartLine();
 

@@ -55,8 +55,8 @@ public class Utils {
                 .get(0);
     }
 
-    public static boolean isConflictFile(@NotNull VirtualFile file) {
-        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getConflictFiles();
+    public static boolean isConflictFile(@NotNull Project project, @NotNull VirtualFile file) {
+        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getInstance(project).getConflictFiles();
         Iterator iterator = conflictsMap.entrySet().iterator();
 
         while (iterator.hasNext()) {

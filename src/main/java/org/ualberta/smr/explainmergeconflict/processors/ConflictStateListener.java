@@ -39,7 +39,7 @@ public class ConflictStateListener implements GitStagingAreaHolder.StagingAreaLi
             // Once a conflict is detected, initialize the service and determine which files + commits are affected.
             if (mergeConflictService == null) {
                 System.out.println("Triggering Merge Conflict Service!");
-                mergeConflictService = repository.getProject().getService(MergeConflictService.class);
+                mergeConflictService = MergeConflictService.getInstance(repository.getProject());
                 assert mergeConflictService != null;
                 mergeConflictService.initConflictFiles();
             }

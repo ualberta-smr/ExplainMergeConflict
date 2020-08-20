@@ -2,13 +2,14 @@ package org.ualberta.smr.explainmergeconflict.services;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.components.Service;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.VcsException;
-import com.intellij.openapi.vfs.VirtualFile;
 import git4idea.GitUtil;
 import git4idea.history.GitHistoryUtils;
 import git4idea.repo.GitConflict;
 import git4idea.repo.GitRepository;
+import org.jetbrains.annotations.NotNull;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
@@ -38,6 +39,10 @@ public final class MergeConflictService implements Disposable {
         }
     }
 
+    public static MergeConflictService getInstance(@NotNull Project project) {
+        return ServiceManager.getService(project, MergeConflictService.class);
+    }
+
     /**
      * Creates a list of {@link ConflictFile}s that each contain data from {@link GitConflict}, as well as additional data
      * such as conflict regions.
@@ -64,7 +69,7 @@ public final class MergeConflictService implements Disposable {
         return baseRevId;
     }
 
-    public static HashMap<String, ConflictFile> getConflictFiles() {
+    public HashMap<String, ConflictFile> getConflictFiles() {
         return conflictFilesMap;
     }
 
