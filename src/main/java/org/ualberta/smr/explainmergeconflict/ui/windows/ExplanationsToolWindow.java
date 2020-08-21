@@ -7,7 +7,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
-import org.ualberta.smr.explainmergeconflict.utils.ConflictRegionUtils;
+import org.ualberta.smr.explainmergeconflict.services.ConflictRegionHandler;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
 import org.ualberta.smr.explainmergeconflict.ui.trees.listeners.ConflictsTreeSelectionListener;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
@@ -72,7 +72,7 @@ public class ExplanationsToolWindow implements DumbAware {
         // If viewing an actual conflict file, render all panels including the trees. Otherwise, remove it,
         if (Utils.isConflictFile(project, file)) {
             // TODO - find a way to only set regions if conflict regions are not registered!
-            ConflictRegionUtils.registerConflictsForFile(project, repo, file);
+            ConflictRegionHandler.registerConflictsForFile(project, repo, file);
             setNewTreeModelForCurrentFile();
             bodyPanel.setVisible(true);
             textPaneHeader.setText("<NUMBER> conflict regions were found in file " + file.getName());

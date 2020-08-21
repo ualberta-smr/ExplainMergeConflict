@@ -1,5 +1,4 @@
 package org.ualberta.smr.explainmergeconflict.actions.utils;
-import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -7,7 +6,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;

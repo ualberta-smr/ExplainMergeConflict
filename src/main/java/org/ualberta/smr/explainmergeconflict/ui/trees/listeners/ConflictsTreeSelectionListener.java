@@ -2,7 +2,7 @@ package org.ualberta.smr.explainmergeconflict.ui.trees.listeners;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-import org.ualberta.smr.explainmergeconflict.utils.ConflictRegionUtils;
+import org.ualberta.smr.explainmergeconflict.services.ConflictRegionHandler;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNodeType;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
@@ -35,7 +35,7 @@ public class ConflictsTreeSelectionListener implements TreeSelectionListener {
         int indexOfNode = node.getParent().getIndex(node);
 
         if (object.getType() == ConflictNodeType.CONFLICTREGION) {
-            ConflictRegionUtils.showConflictRegionInEditor(project, file, indexOfNode);
+            ConflictRegionHandler.showConflictRegionInEditor(project, file, indexOfNode);
         } else if (object.getType() == ConflictNodeType.COMMIT) {
             System.out.println("Commit selected!");
         }
