@@ -2,6 +2,7 @@ package org.ualberta.smr.explainmergeconflict.actions;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
@@ -20,31 +21,25 @@ public class ShowExplanationsToolWindowAction extends AnAction {
     public void update(AnActionEvent e) {
         GitRepository repo = Utils.getCurrentRepository(e.getProject());
         e.getPresentation().setVisible(repo != null && Utils.isInConflictState(repo));
-
-//            System.out.println(e.getDataContext());
     }
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         GitRepository repo = Utils.getCurrentRepository(e.getProject());
 
-        // TODO - show popup only for files without conflicts
-        // TODO - use ActionPopupMenu?
-        // Ideally, action should not be visible if no conflicts are found
-        if (!Utils.isInConflictState(repo)) {
+        if (Utils.isConflictFile(e.getProject(), e.getData(CommonDataKeys.VIRTUAL_FILE))) {
+            UIController.updateToolWindowAfterAction(repo);
+        } else {
             showPopup(e.getDataContext());
-            return;
         }
-
-        UIController.updateToolWindowAfterAction(repo);
     }
 
     // Reference: RefactoringHistoryToolbar.java
-    private void showPopup(DataContext datacontext) {
+    private void showPopup(DataContext dataContext) {
         JBPanel panel = new JBPanel(new GridLayout(0, 1));
         panel.add(new JBLabel(ExplainMergeConflictBundle.message("no.conflict.show.explanations")));
         JBPopup popup = JBPopupFactory.getInstance()
                 .createComponentPopupBuilder(panel, null).createPopup();
-        popup.showInBestPositionFor(datacontext);
+        popup.showInBestPositionFor(dataContext);
     }
 }

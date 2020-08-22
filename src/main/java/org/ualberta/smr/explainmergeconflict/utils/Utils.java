@@ -12,6 +12,13 @@ import git4idea.commands.GitCommand;
 import git4idea.commands.GitLineHandler;
 import git4idea.repo.GitRepository;
 import git4idea.repo.GitRepositoryManager;
+import org.jetbrains.annotations.NotNull;
+import org.ualberta.smr.explainmergeconflict.ConflictFile;
+import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class Utils {
 
@@ -21,7 +28,7 @@ public class Utils {
      * @param repo the current repository
      * @return boolean true if conflicts exist; otherwise false
      */
-    public static boolean isInConflictState(GitRepository repo) {
+    public static boolean isInConflictState(@NotNull GitRepository repo) {
         return !repo.getStagingAreaHolder().getAllConflicts().isEmpty();
     }
 
@@ -30,7 +37,7 @@ public class Utils {
      * @param project the current project
      * @return boolean true if git repository; otherwise false
      */
-    public static boolean isInGitRepository(Project project) {
+    public static boolean isInGitRepository(@NotNull Project project) {
         return !GitRepositoryManager.getInstance(project).getRepositories().isEmpty();
     }
 
@@ -39,13 +46,25 @@ public class Utils {
      * @param project current project open in IntelliJ
      * @return current repository
      */
-    public static GitRepository getCurrentRepository(Project project) {
+    public static GitRepository getCurrentRepository(@NotNull Project project) {
         if (!isInGitRepository(project)) {
             return null;
         }
         return GitRepositoryManager.getInstance(project)
                 .getRepositories()
                 .get(0);
+    }
+
+    public static boolean isConflictFile(@NotNull Project project, @NotNull VirtualFile file) {
+        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getInstance(project).getConflictFiles();
+        Iterator iterator = conflictsMap.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry pair = (Map.Entry) iterator.next();
+            boolean isConflictFile = pair.getKey().equals(file.getPath());
+            if (isConflictFile) return true;
+        }
+        return false;
     }
 
     public static String getRevisionShortAsString(Project project,
@@ -65,7 +84,7 @@ public class Utils {
      * @param project current project open in IntelliJ
      * @return current file as {@link VirtualFile}
      */
-    public static VirtualFile getCurrentFileFromEditor(Project project) {
+    public static VirtualFile getCurrentFileFromEditor(@NotNull Project project) {
         // reference: // reference: https://intellij-support.jetbrains.com/hc/en-us/community/posts/206795775-Get-current-Project-current-file-in-editor
         Editor editor =
                 FileEditorManager.getInstance(project).getSelectedTextEditor();

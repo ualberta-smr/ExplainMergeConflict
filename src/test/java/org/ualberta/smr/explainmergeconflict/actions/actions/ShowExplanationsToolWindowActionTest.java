@@ -1,10 +1,11 @@
-package org.ualberta.smr.explainmergeconflict.actions;
+package org.ualberta.smr.explainmergeconflict.actions.actions;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.project.Project;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.testFramework.fixtures.TempDirTestFixture;
+import org.ualberta.smr.explainmergeconflict.actions.ShowExplanationsToolWindowAction;
 
 public class ShowExplanationsToolWindowActionTest extends BasePlatformTestCase {
     private String head;
