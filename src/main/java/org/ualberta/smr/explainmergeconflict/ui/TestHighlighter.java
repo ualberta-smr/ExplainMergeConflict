@@ -14,6 +14,7 @@ import gnu.trove.THashSet;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
+import org.ualberta.smr.explainmergeconflict.ConflictRegion;
 import org.ualberta.smr.explainmergeconflict.services.ConflictRegionHandler;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
 import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
@@ -24,21 +25,38 @@ import java.util.*;
 public class TestHighlighter implements VcsLogHighlighter {
     @NotNull private final VcsLogData myLogData;
     @NotNull private final VcsLogUi myLogUi;
+    @NotNull private final GitRepository repo;
+    private List<Hash> commits = new ArrayList<>();
+    private HashMap<ConflictRegion, List<Hash>> conflictsMap = new HashMap<>();
     private boolean shouldHighlightCommits = false;
 
     public TestHighlighter(@NotNull VcsLogData logData, @NotNull VcsLogUi logUi) {
         myLogData = logData;
         myLogUi = logUi;
+        repo = Objects.requireNonNull(Utils.getCurrentRepository(myLogData.getProject()));
     }
 
     @NotNull
     @Override
     public VcsCommitStyle getStyle(int commitId, @NotNull VcsShortCommitDetails details, boolean isSelected) {
         // Highlight commits only if in merge conflict mode and enabled. Requires refresh though for main vcs log.
-        if (myLogUi.isHighlighterEnabled(Factory.ID) && shouldHighlightCommits) {
-            return VcsCommitStyleFactory.createStyle(JBColor.RED, JBColor.PanelBackground, TextStyle.BOLD);
+        if (!myLogUi.isHighlighterEnabled(Factory.ID) && !shouldHighlightCommits) {
+            return VcsCommitStyle.DEFAULT;
         }
 
+        System.out.println(conflictsMap.isEmpty());
+        if (!conflictsMap.isEmpty()) {
+            System.out.println("Nice");
+            Iterator iterator = conflictsMap.entrySet().iterator();
+
+            while(iterator.hasNext()) {
+                Map.Entry pair = (Map.Entry) iterator.next();
+                List<Hash> hash = (List<Hash>) pair.getValue();
+                int index = myLogData.getCommitIndex(hash.get(0), repo.getRoot());
+                System.out.println(index);
+                if (index == commitId) return VcsCommitStyleFactory.createStyle(JBColor.RED, JBColor.PanelBackground, TextStyle.BOLD);
+            }
+        }
         return VcsCommitStyle.DEFAULT;
 
         // TODO - data.getProject() exists
@@ -68,11 +86,35 @@ public class TestHighlighter implements VcsLogHighlighter {
 //        return VcsCommitStyle.DEFAULT;
     }
 
+    private void readConflicts() {
+        Project project = myLogData.getProject();
+        VirtualFile file = Utils.getCurrentFileFromEditor(project);
+        if (file != null && Utils.isConflictFile(project, file)) {
+            ConflictRegionHandler.registerConflictsForFile(project, repo, file); // FIXME - running this in toolwindow
+            HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
+            ConflictFile conflictFile = conflictFiles.get(file.getPath());
+            List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
+
+            VcsLogFilterCollection filters = myLogUi.getFilterUi().getFilters();
+            System.out.println(filters.get(VcsLogFilterCollection.BRANCH_FILTER));
+
+            if (filters.get(VcsLogFilterCollection.BRANCH_FILTER).matches("HEAD")) {
+                System.out.println("Match!");
+                for (ConflictRegion conflictRegion: conflictRegions) {
+                    System.out.println("test");
+                    conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
+                }
+            }
+        }
+    }
+
     @Override
     public void update(@NotNull VcsLogDataPack dataPack, boolean refreshHappened) {
         System.out.println("update!");
-        GitRepository repo = Utils.getCurrentRepository(myLogData.getProject());
         shouldHighlightCommits = Utils.isInConflictState(repo);
+        if (shouldHighlightCommits) {
+            readConflicts();
+        }
     }
 
     public static class Factory implements VcsLogHighlighterFactory {
