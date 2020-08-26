@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.services.ConflictRegionHandler;
+import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
 import org.ualberta.smr.explainmergeconflict.services.MergeConflictService;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
@@ -23,7 +24,7 @@ import java.util.*;
 public class TestHighlighter implements VcsLogHighlighter {
     @NotNull private final VcsLogData myLogData;
     @NotNull private final VcsLogUi myLogUi;
-    private boolean myShouldHighlightUser = false;
+    private boolean shouldHighlightCommits = false;
 
     public TestHighlighter(@NotNull VcsLogData logData, @NotNull VcsLogUi logUi) {
         myLogData = logData;
@@ -33,10 +34,12 @@ public class TestHighlighter implements VcsLogHighlighter {
     @NotNull
     @Override
     public VcsCommitStyle getStyle(int commitId, @NotNull VcsShortCommitDetails details, boolean isSelected) {
-        // TODO currentbranchhighter, mycommitshighlighter
-        if (!myLogUi.isHighlighterEnabled(Factory.ID)) return VcsCommitStyle.DEFAULT;
-        if (myLogUi.isHighlighterEnabled(Factory.ID) && isSelected) return VcsCommitStyleFactory.createStyle(JBColor.RED, JBColor.RED, TextStyle.NORMAL);
-        return VcsCommitStyleFactory.createStyle(JBColor.RED, JBColor.PanelBackground, TextStyle.BOLD);
+        // Highlight commits only if in merge conflict mode and enabled. Requires refresh though for main vcs log.
+        if (myLogUi.isHighlighterEnabled(Factory.ID) && shouldHighlightCommits) {
+            return VcsCommitStyleFactory.createStyle(JBColor.RED, JBColor.PanelBackground, TextStyle.BOLD);
+        }
+
+        return VcsCommitStyle.DEFAULT;
 
         // TODO - data.getProject() exists
 //        Condition<Integer> condition = myLogData.getContainingBranchesGetter().getContainedInCurrentBranchCondition(details.getRoot());
@@ -67,27 +70,13 @@ public class TestHighlighter implements VcsLogHighlighter {
 
     @Override
     public void update(@NotNull VcsLogDataPack dataPack, boolean refreshHappened) {
-//        myShouldHighlightUser = !isSingleUser() && !isFilteredByCurrentUser(dataPack.getFilters());
-//        System.out.println(myShouldHighlightUser);
         System.out.println("update!");
-    }
-
-    // returns true if only one user commits to this repository
-    private boolean isSingleUser() {
-        THashSet<VcsUser> users = new THashSet<>(myLogData.getCurrentUser().values(), new VcsUserUtil.VcsUserHashingStrategy());
-        return myLogData.getUserRegistry().all(user -> users.contains(user));
-    }
-
-    // returns true if filtered by "me"
-    private static boolean isFilteredByCurrentUser(@NotNull VcsLogFilterCollection filters) {
-        VcsLogUserFilter userFilter = filters.get(VcsLogFilterCollection.USER_FILTER);
-        if (userFilter == null) return false;
-        if (Collections.singleton(VcsLogFilterObject.ME).containsAll(userFilter.getValuesAsText())) return true;
-        return false;
+        GitRepository repo = Utils.getCurrentRepository(myLogData.getProject());
+        shouldHighlightCommits = Utils.isInConflictState(repo);
     }
 
     public static class Factory implements VcsLogHighlighterFactory {
-        @NotNull public static final String ID = "CONFLICT_COMMITS"; // NON-NLS
+        @NotNull public static final String ID = ExplainMergeConflictBundle.message("vcs.log.conflict.highlighter.id");
 
         @NotNull
         @Override
@@ -104,7 +93,7 @@ public class TestHighlighter implements VcsLogHighlighter {
         @NotNull
         @Override
         public String getTitle() {
-            return "Conflict Commits";
+            return ExplainMergeConflictBundle.message("vcs.log.conflict.highlighter.label");
         }
 
         @Override

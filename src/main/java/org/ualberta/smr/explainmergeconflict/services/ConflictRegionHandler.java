@@ -76,13 +76,14 @@ public class ConflictRegionHandler {
      */
     private static void registerConflictRegions(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file, @NotNull List<String> output) {
         ArrayList<String> filteredList = new ArrayList<>(output);
+        // Filter output to only show hunk data.
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
 
         assert !filteredList.isEmpty();
 
         List<ConflictRegion> conflictRegionList = new ArrayList<>();
 
-        // Triple represents the three pair of hunks data
+        // Triple represents the three pairs of hunks data - conflict region, p1, and p2 respectively
         for (String region: filteredList) {
             Triple<Pair<Integer, Integer>, Pair<Integer, Integer>, Pair<Integer, Integer>> pairs = ConflictRegionUtils.parseAndFindPairsForConflictRegion(region);
             Pair<Integer,Integer> regionPair = pairs.getFirst();
@@ -118,10 +119,12 @@ public class ConflictRegionHandler {
         }
 
         assert !conflictRegionList.isEmpty();
+
         // Access conflict files hashmap in MergeConflictService and update their values with the new conflict classes
         HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getInstance(project).getConflictFiles();
         ConflictFile conflictFile = conflictsMap.get(file.getPath());
         conflictFile.setConflictRegions(conflictRegionList);
+
         // TODO simplify setting conflict files and remove repetition
         MergeConflictService.getInstance(project).getConflictFiles().replace(file.getPath(), conflictFile);
     }
@@ -138,7 +141,8 @@ public class ConflictRegionHandler {
             @Override
             public void run() {
                 HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
-                List<ConflictRegion> conflictRegions = conflictFiles.get(file.getPath()).getConflictRegions();
+                ConflictFile conflictFile = conflictFiles.get(file.getPath());
+                List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
                 int regionStartLine = conflictRegions.get(nodeIndex).getStartLine();
 
                 OpenFileDescriptor descriptor = new OpenFileDescriptor(project, file, regionStartLine-1, 0);
