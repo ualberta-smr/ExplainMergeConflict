@@ -5,6 +5,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
 import git4idea.commands.Git;
@@ -39,6 +40,15 @@ public class Utils {
      */
     public static boolean isInGitRepository(@NotNull Project project) {
         return !GitRepositoryManager.getInstance(project).getRepositories().isEmpty();
+    }
+
+    /**
+     * Returns current project instance.
+     * @return current project
+     */
+    public static Project getCurrentProject() {
+        Project[] projects = ProjectManager.getInstance().getOpenProjects();
+        return projects[0];
     }
 
     /**

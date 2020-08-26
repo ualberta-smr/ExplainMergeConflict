@@ -8,15 +8,21 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
+import com.intellij.vcs.log.VcsLogDataKeys;
+import com.intellij.vcs.log.VcsLogUi;
 import com.sun.istack.NotNull;
 import git4idea.repo.GitRepository;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
 import org.ualberta.smr.explainmergeconflict.services.UIController;
+import org.ualberta.smr.explainmergeconflict.ui.TestWindow;
 import org.ualberta.smr.explainmergeconflict.utils.Utils;
 
 import java.awt.GridLayout;
 
 public class ShowExplanationsToolWindowAction extends AnAction {
+    // TODO - temporary code for testing log UI functionality
+    public static TestWindow window;
+
     @Override
     public void update(AnActionEvent e) {
         GitRepository repo = Utils.getCurrentRepository(e.getProject());
@@ -29,6 +35,11 @@ public class ShowExplanationsToolWindowAction extends AnAction {
 
         if (Utils.isConflictFile(e.getProject(), e.getData(CommonDataKeys.VIRTUAL_FILE))) {
             UIController.updateToolWindowAfterAction(repo);
+            VcsLogUi logUi = e.getData(VcsLogDataKeys.VCS_LOG_UI);
+
+            if (window == null) {
+                window = new TestWindow(e.getProject(), logUi, e.getData(CommonDataKeys.VIRTUAL_FILE));
+            }
         } else {
             showPopup(e.getDataContext());
         }

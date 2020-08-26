@@ -28,6 +28,8 @@
         <projectService serviceImplementation="org.jetbrains.research.refactorinsight.services.WindowService"/>
         <projectService serviceImplementation="org.jetbrains.research.refactorinsight.services.SettingsState"/>
 
+        <logHighlighterFactory implementation="org.ualberta.smr.explainmergeconflict.ui.TestHighlighter$Factory"/>
+
         <errorHandler implementation="org.jetbrains.research.refactorinsight.reporter.RefactorInsightErrorReporter"/>
     </extensions>
 
