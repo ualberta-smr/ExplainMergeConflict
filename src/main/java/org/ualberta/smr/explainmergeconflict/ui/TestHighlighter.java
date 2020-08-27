@@ -24,7 +24,7 @@ public class TestHighlighter implements VcsLogHighlighter {
     @NotNull private final VcsLogData myLogData;
     @NotNull private final VcsLogUi myLogUi;
     @NotNull private final GitRepository repo;
-    private HashMap<ConflictRegion, List<Hash>> conflictsMap = new HashMap<>();
+    private final HashMap<ConflictRegion, List<Hash>> conflictsMap = new HashMap<>();
     private boolean shouldHighlightCommits = false;
 
     public TestHighlighter(@NotNull VcsLogData logData, @NotNull VcsLogUi logUi) {
@@ -47,7 +47,7 @@ public class TestHighlighter implements VcsLogHighlighter {
         if (shouldHighlightCommits && !conflictsMap.isEmpty()) {
             Iterator iterator = conflictsMap.entrySet().iterator();
 
-            // For each conflict region, see which commit has to be highlighted.
+            // For each conflict region, see which commit has to be highlighted
             while(iterator.hasNext()) {
                 Map.Entry pair = (Map.Entry) iterator.next();
                 List<Hash> commits = (List<Hash>) pair.getValue();
@@ -72,37 +72,47 @@ public class TestHighlighter implements VcsLogHighlighter {
 
         // If file path filter is not ALL
         if (structureFilter != null) {
-            // TODO file path from filter. Note that structure filter and branch filter will be null if set to ALL.
             Collection<FilePath> filterFiles = structureFilter.getFiles();
 
             for (FilePath filterFile: filterFiles) {
                 VirtualFile file = filterFile.getVirtualFile();
 
                 if (Utils.isConflictFile(project, file)) {
-                    // FIXME - running this in toolwindow
-                    ConflictRegionHandler.registerConflictsForFile(project, repo, file);
-
-                    HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
-                    ConflictFile conflictFile = conflictFiles.get(file.getPath());
-                    List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
-
-                    /*
-                     * TODO
-                     *  First, we should get current branch name of HEAD and MERGE_HEAD. So that when we filter by those names,
-                     * we will highlight the logs in those branches. Let's read the diff and use regex to get the branch name?
-                     *
-                     * 1. Register head branch name in Merge Conflict Service
-                     * 2. Register merge_head branch name in Merge Conflict Service
-                     * 3. If branchFilter is HEAD or head branch name, update commits map to p1 commits
-                     * 4. If branchFilter is merge_head branch name, update commits map to p2 commits
-                     * 5. Else, there is an error!
-                     */
-                    if (branchFilter != null && (branchFilter.matches(VcsLogUtil.HEAD))) {
-                        for (ConflictRegion conflictRegion: conflictRegions) {
-                            conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
-                        }
-                    }
+                    updateCommitsToHighlight(project, file, branchFilter);
                 }
+            }
+        } else { // Otherwise just clear highlighting for now if viewing for all files
+            conflictsMap.clear();
+        }
+    }
+
+    private void updateCommitsToHighlight(Project project, VirtualFile file, VcsLogBranchFilter branchFilter) {
+        // FIXME - running this in toolwindow
+        ConflictRegionHandler.registerConflictsForFile(project, repo, file);
+
+        HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
+        ConflictFile conflictFile = conflictFiles.get(file.getPath());
+        List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
+
+        // If branch is not ALL
+        if (branchFilter != null) {
+            if (branchFilter.matches(VcsLogUtil.HEAD) || branchFilter.matches(MergeConflictService.getHeadBranchName())) {
+                for (ConflictRegion conflictRegion: conflictRegions) {
+                    conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
+                }
+            } else if (branchFilter.matches(MergeConflictService.getMergeBranchName())) {
+                for (ConflictRegion conflictRegion: conflictRegions) {
+                    conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
+                }
+            } else {
+                // Clear highlighting for any other branch that is not head or merge_head
+                conflictsMap.clear();
+            }
+        } else {
+            // Otherwise just highlight all conflict commits for the time being
+            for (ConflictRegion conflictRegion: conflictRegions) {
+                conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
+                conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
             }
         }
     }
