@@ -41,7 +41,6 @@ public class ConflictStateListener implements GitStagingAreaHolder.StagingAreaLi
                 System.out.println("Triggering Merge Conflict Service!");
                 mergeConflictService = MergeConflictService.getInstance(repository.getProject());
                 assert mergeConflictService != null;
-                mergeConflictService.initConflictFiles();
             }
         }
     }

@@ -40,6 +40,15 @@ public final class MergeConflictService implements Disposable {
         return ServiceManager.getService(project, MergeConflictService.class);
     }
 
+    /**
+     * Initializes values for all attributes: the common ancestor commit id, the branch name of HEAD, the branch name of
+     * MERGE_HEAD, and a map of {@link ConflictFile}s. The map of conflict files contains all files affected by the
+     * merge conflict and is formatted as such:
+     *
+     * {
+     *     <path of conflicted file>: <instance of ConflictFile>
+     * }
+     */
     private void init() {
         GitRepository repo = Objects.requireNonNull(Utils.getCurrentRepository(project));
 
@@ -69,16 +78,21 @@ public final class MergeConflictService implements Disposable {
                     conflict.getStatus(GitConflict.ConflictSide.OURS),
                     conflict.getStatus(GitConflict.ConflictSide.THEIRS)
             );
-            conflictFilesMap.put(conflict.getFilePath().toString(), conflictFile);
+            String key = conflict.getFilePath().toString();
+            conflictFilesMap.put(key, conflictFile);
         }
     }
 
+    /**
+     * Gets the branch names for the HEAD and MERGE_HEAD references by using {@link GitLineHandler} to run a the git
+     * command `git log <ref> -1 --pretty=%D`.
+     * @param repo current repository
+     */
     private void setBranches(GitRepository repo) {
         headBranchName = GitBranchUtil.getBranchNameOrRev(repo);
 
         /*
-         * Run `git log <ref> -1 --pretty=%D` to get the branch name assigned to the current ref. %D returns the
-         * branch name of a ref without the "()" brackets surrounding it.
+         * %D returns the branch name of a ref without the "()" brackets surrounding it.
          * Reference: https://git-scm.com/docs/git-log#_pretty_formats
          */
         GitLineHandler h = new GitLineHandler(project, repo.getRoot(), GitCommand.LOG);
@@ -91,28 +105,6 @@ public final class MergeConflictService implements Disposable {
         assert output.size() == 1;
 
         mergeBranchName = output.get(0);
-    }
-
-    /**
-     * Creates a list of {@link ConflictFile}s that each contain data from {@link GitConflict}, as well as additional data
-     * such as conflict regions.
-     */
-    public void initConflictFiles() {
-        GitRepository repo = Utils.getCurrentRepository(project);
-        assert repo != null;
-        List<GitConflict> conflicts = new ArrayList<>(repo.getStagingAreaHolder()
-                .getAllConflicts()
-        );
-
-        for (GitConflict conflict: conflicts) {
-            ConflictFile conflictFile = new ConflictFile(
-                    conflict.getRoot(),
-                    conflict.getFilePath(),
-                    conflict.getStatus(GitConflict.ConflictSide.OURS),
-                    conflict.getStatus(GitConflict.ConflictSide.THEIRS)
-            );
-            conflictFilesMap.put(conflict.getFilePath().toString(), conflictFile);
-        }
     }
 
     public static String getBaseRevId() {
