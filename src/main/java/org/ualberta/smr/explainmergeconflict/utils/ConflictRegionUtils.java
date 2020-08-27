@@ -32,6 +32,39 @@ public class ConflictRegionUtils {
         return !conflictRegions.isEmpty();
     }
 
+    public static String getMergeBranchName(List<String> output) {
+        String headBranchName = null;
+        String mergeHeadBranchName = null;
+        Pattern patternHead;
+        Pattern patternMergeHead;
+        Matcher matcherHead;
+        Matcher matcherMergeHead;
+
+        // HEAD
+        patternHead = Pattern.compile("[+]{2}[<]{7}\\s\\w+");
+        patternMergeHead = Pattern.compile("[+]{2}[>]{7}\\s\\w+");
+
+        // TODO - ignore looking for head here since we can use other helper methods for this
+        for (String str: output) {
+            matcherHead = patternHead.matcher(str);
+            matcherMergeHead = patternMergeHead.matcher(str);
+            if (headBranchName != null && mergeHeadBranchName != null) {
+                break;
+            }
+            else if (matcherHead.find() && headBranchName == null) {
+                headBranchName = str;
+            } else if (matcherMergeHead.find() && mergeHeadBranchName == null) {
+                mergeHeadBranchName = str;
+            }
+        }
+        assert headBranchName != null;
+        assert mergeHeadBranchName != null;
+
+        String branchName = mergeHeadBranchName.replaceAll("[+]{2}[>]{7}", "");
+        branchName = branchName.trim();
+        return branchName;
+    }
+
     /**
      * Parses through the git diff output from the git handler and gets the appropriate start line numbers and length
      * data for p1, p2, and the entire conflict region

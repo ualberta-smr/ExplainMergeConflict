@@ -75,9 +75,12 @@ public class ConflictRegionHandler {
      * @param file current file
      */
     private static void registerConflictRegions(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file, @NotNull List<String> output) {
+        // TODO - add to utils
         ArrayList<String> filteredList = new ArrayList<>(output);
         // Filter output to only show hunk data.
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
+
+        System.out.println(ConflictRegionUtils.getMergeBranchName(output));
 
         assert !filteredList.isEmpty();
 
