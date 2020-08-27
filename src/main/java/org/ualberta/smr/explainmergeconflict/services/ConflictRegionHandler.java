@@ -80,8 +80,6 @@ public class ConflictRegionHandler {
         // Filter output to only show hunk data.
         filteredList.removeIf(e -> !e.startsWith("@@@") && !e.endsWith("@@@"));
 
-        System.out.println(ConflictRegionUtils.getMergeBranchName(output));
-
         assert !filteredList.isEmpty();
 
         List<ConflictRegion> conflictRegionList = new ArrayList<>();
