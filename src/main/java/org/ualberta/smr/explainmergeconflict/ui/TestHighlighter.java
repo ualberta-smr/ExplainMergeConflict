@@ -1,17 +1,14 @@
 package org.ualberta.smr.explainmergeconflict.ui;
 
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Condition;
+import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.JBColor;
 import com.intellij.vcs.log.*;
 import com.intellij.vcs.log.data.VcsLogData;
 import com.intellij.vcs.log.ui.highlighters.VcsLogHighlighterFactory;
-import com.intellij.vcs.log.util.VcsUserUtil;
-import com.intellij.vcs.log.visible.filters.VcsLogFilterObject;
+import com.intellij.vcs.log.util.VcsLogUtil;
 import git4idea.repo.GitRepository;
-import gnu.trove.THashSet;
-import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.ualberta.smr.explainmergeconflict.ConflictFile;
 import org.ualberta.smr.explainmergeconflict.ConflictRegion;
@@ -23,10 +20,10 @@ import org.ualberta.smr.explainmergeconflict.utils.Utils;
 import java.util.*;
 
 public class TestHighlighter implements VcsLogHighlighter {
+    private static final VcsCommitStyle CONFLICT_STYLE = VcsCommitStyleFactory.createStyle(JBColor.RED, null, TextStyle.BOLD);
     @NotNull private final VcsLogData myLogData;
     @NotNull private final VcsLogUi myLogUi;
     @NotNull private final GitRepository repo;
-    private List<Hash> commits = new ArrayList<>();
     private HashMap<ConflictRegion, List<Hash>> conflictsMap = new HashMap<>();
     private boolean shouldHighlightCommits = false;
 
@@ -36,89 +33,99 @@ public class TestHighlighter implements VcsLogHighlighter {
         repo = Objects.requireNonNull(Utils.getCurrentRepository(myLogData.getProject()));
     }
 
+    /**
+     * Get the vcs commit style we should apply depending on whether or not there is a merge conflict + the conflict
+     * commits highlighter is enabled through the presentation settings. Is called whenever we enable/disable a
+     * highlighter and load commits. Is constantly updated.
+     */
     @NotNull
     @Override
     public VcsCommitStyle getStyle(int commitId, @NotNull VcsShortCommitDetails details, boolean isSelected) {
-        // Highlight commits only if in merge conflict mode and enabled. Requires refresh though for main vcs log.
-        if (!myLogUi.isHighlighterEnabled(Factory.ID) && !shouldHighlightCommits) {
-            return VcsCommitStyle.DEFAULT;
-        }
+        // Highlight commits only if in merge conflict mode and enabled. Might require refresh though for main vcs log.
+        shouldHighlightCommits = Utils.isInConflictState(repo) && myLogUi.isHighlighterEnabled(Factory.ID);
 
-        System.out.println(conflictsMap.isEmpty());
-        if (!conflictsMap.isEmpty()) {
-            System.out.println("Nice");
+        if (shouldHighlightCommits && !conflictsMap.isEmpty()) {
             Iterator iterator = conflictsMap.entrySet().iterator();
 
+            // For each conflict region, see which commit has to be highlighted.
             while(iterator.hasNext()) {
                 Map.Entry pair = (Map.Entry) iterator.next();
-                List<Hash> hash = (List<Hash>) pair.getValue();
-                int index = myLogData.getCommitIndex(hash.get(0), repo.getRoot());
-                System.out.println(index);
-                if (index == commitId) return VcsCommitStyleFactory.createStyle(JBColor.RED, JBColor.PanelBackground, TextStyle.BOLD);
+                List<Hash> commits = (List<Hash>) pair.getValue();
+
+                for (Hash hashId: commits) {
+                    int index = myLogData.getCommitIndex(hashId, repo.getRoot());
+                    if (index == commitId) return CONFLICT_STYLE;
+                    // TODO condition if not found?
+                }
             }
         }
         return VcsCommitStyle.DEFAULT;
-
-        // TODO - data.getProject() exists
-//        Condition<Integer> condition = myLogData.getContainingBranchesGetter().getContainedInCurrentBranchCondition(details.getRoot());
-//        Project project = Utils.getCurrentProject();
-//        GitRepository repo = Utils.getCurrentRepository(project);
-//        HashMap<String, ConflictFile> conflictsMap = MergeConflictService.getInstance(project).getConflictFiles();
-//        VirtualFile file = Utils.getCurrentFileFromEditor(project);
-//        Iterator iterator = conflictsMap.entrySet().iterator();
-//
-//        while (iterator.hasNext()) {
-//            Map.Entry pair = (Map.Entry) iterator.next();
-//            boolean isConflictFile = pair.getKey().equals(file.getPath());
-//        }
-//        if (!conflictsMap.isEmpty() && conflictsMap.containsKey(file.getPath())) {
-////            System.out.println(conflictsMap);
-//            ConflictFile conflictFile = conflictsMap.get(file.getPath());
-//            ConflictRegionHandler.registerConflictsForFile(project, repo, file);
-//            List<Hash> hashes = conflictFile.getConflictRegions().get(0).getP1().getCommitsHistoryIds();
-//            int in = myLogData.getCommitIndex(hashes.get(0), repo.getRoot());
-//            if (in == commitId) {
-//                return VcsCommitStyleFactory.createStyle(JBColor.RED, JBColor.PanelBackground, TextStyle.BOLD);
-////            return VcsCommitStyleFactory.background(CURRENT_BRANCH_BG);
-//            }
-//        }
-
-//        return VcsCommitStyle.DEFAULT;
     }
 
     private void readConflicts() {
         Project project = myLogData.getProject();
-        VirtualFile file = Utils.getCurrentFileFromEditor(project);
-        if (file != null && Utils.isConflictFile(project, file)) {
-            ConflictRegionHandler.registerConflictsForFile(project, repo, file); // FIXME - running this in toolwindow
-            HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
-            ConflictFile conflictFile = conflictFiles.get(file.getPath());
-            List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
 
-            VcsLogFilterCollection filters = myLogUi.getFilterUi().getFilters();
-            System.out.println(filters.get(VcsLogFilterCollection.BRANCH_FILTER));
+        // Filters
+        VcsLogFilterCollection filters = myLogUi.getFilterUi().getFilters();
+        VcsLogBranchFilter branchFilter  = filters.get(VcsLogFilterCollection.BRANCH_FILTER);
+        VcsLogStructureFilter structureFilter = filters.get(VcsLogFilterCollection.STRUCTURE_FILTER);
 
-            if (filters.get(VcsLogFilterCollection.BRANCH_FILTER).matches("HEAD")) {
-                System.out.println("Match!");
-                for (ConflictRegion conflictRegion: conflictRegions) {
-                    System.out.println("test");
-                    conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
+        // If file path filter is not ALL
+        if (structureFilter != null) {
+            // TODO file path from filter. Note that structure filter and branch filter will be null if set to ALL.
+            Collection<FilePath> filterFiles = structureFilter.getFiles();
+
+            for (FilePath filterFile: filterFiles) {
+                VirtualFile file = filterFile.getVirtualFile();
+
+                if (Utils.isConflictFile(project, file)) {
+                    // FIXME - running this in toolwindow
+                    ConflictRegionHandler.registerConflictsForFile(project, repo, file);
+
+                    HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
+                    ConflictFile conflictFile = conflictFiles.get(file.getPath());
+                    List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
+
+                    /*
+                     * TODO
+                     *  First, we should get current branch name of HEAD and MERGE_HEAD. So that when we filter by those names,
+                     * we will highlight the logs in those branches. Let's read the diff and use regex to get the branch name?
+                     *
+                     * 1. Register head branch name in Merge Conflict Service
+                     * 2. Register merge_head branch name in Merge Conflict Service
+                     * 3. If branchFilter is HEAD or head branch name, update commits map to p1 commits
+                     * 4. If branchFilter is merge_head branch name, update commits map to p2 commits
+                     * 5. Else, there is an error!
+                     */
+                    if (branchFilter != null && (branchFilter.matches(VcsLogUtil.HEAD))) {
+                        for (ConflictRegion conflictRegion: conflictRegions) {
+                            conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
+                        }
+                    }
                 }
             }
         }
     }
 
+    /**
+     * Runs whenever the log is filtered. This includes using the search bar, intellisort, and using the provided
+     * filter options such as branch and date.
+     * @param dataPack data such as refs and filters for the current log provider
+     * @param refreshHappened true if the refresh action was enabled
+     */
     @Override
     public void update(@NotNull VcsLogDataPack dataPack, boolean refreshHappened) {
         System.out.println("update!");
-        shouldHighlightCommits = Utils.isInConflictState(repo);
-        if (shouldHighlightCommits) {
-            readConflicts();
-        }
+        // FIXME - using isEmpty as a condition to read conflicts won't work if we're changing filter to a new file
+//        if (conflictsMap.isEmpty()) {
+//
+//        }
+        readConflicts();
+        // TODO figure out when to clear conflictsMap
     }
 
     public static class Factory implements VcsLogHighlighterFactory {
-        @NotNull public static final String ID = ExplainMergeConflictBundle.message("vcs.log.conflict.highlighter.id");
+        @NotNull public static final String ID = "CONFLICT_COMMITS";
 
         @NotNull
         @Override
