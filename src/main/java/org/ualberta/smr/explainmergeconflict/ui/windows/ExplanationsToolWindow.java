@@ -1,5 +1,7 @@
 package org.ualberta.smr.explainmergeconflict.ui.windows;
 
+import com.intellij.openapi.editor.colors.EditorColorsManager;
+import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.DumbAware;
@@ -7,7 +9,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBScrollPane;
 import git4idea.repo.GitRepository;
-import org.ualberta.smr.explainmergeconflict.services.ConflictRegionHandler;
 import org.ualberta.smr.explainmergeconflict.services.ExplainMergeConflictBundle;
 import org.ualberta.smr.explainmergeconflict.ui.trees.listeners.ConflictsTreeSelectionListener;
 import org.ualberta.smr.explainmergeconflict.ui.trees.renderers.ConflictNode;
@@ -20,6 +21,7 @@ import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
+import java.awt.*;
 
 public class ExplanationsToolWindow implements DumbAware {
     private Project project;
@@ -29,20 +31,15 @@ public class ExplanationsToolWindow implements DumbAware {
     private JPanel explanationsToolWindowContent;
     private JPanel headerPanel;
     private JTextPane textPaneHeader;
-    private JTextPane textPaneOurs;
-    private JLabel labelOurs;
-    private JLabel labelTheirs;
     private JScrollPane headerPane;
     private JPanel bodyPanel;
-    private JTree treeTheirs;
     private JTextPane textPaneTheirs;
-    private JSplitPane splitPaneOurs;
     private JSplitPane splitPaneTheirs;
-    private JScrollPane scrollPaneOursLeft;
-    private JScrollPane scrollPaneOursRight;
     private JScrollPane scrollPaneTheirsLeft;
     private JScrollPane scrollPaneTheirsRight;
     private JTree treeOurs;
+    private JTextPane textPaneOurs;
+    private JScrollPane scrollPaneTree;
 
     public ExplanationsToolWindow(GitRepository repo,
                                   Project project) {
@@ -65,6 +62,7 @@ public class ExplanationsToolWindow implements DumbAware {
             }
         });
         updateUI();
+        updateBackgroundColors();
     }
 
     private void updateUI() {
@@ -92,17 +90,24 @@ public class ExplanationsToolWindow implements DumbAware {
     }
 
     private void setNewTreeModelForCurrentFile() {
-        ConflictNode rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.ours"));
+        ConflictNode rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, file.getName());
         DefaultMutableTreeNode rootOurs = ConflictsTreeUtils.createRootAndChildren(project, file, rootNode);
         TreeModel model = new DefaultTreeModel(rootOurs);
         treeOurs.setModel(model);
     }
 
-//    private void updateBackgroundColors() {
-//        // TODO update color when Editor theme changes
-//        // We can do so by referring to EditorColorsManager.getInstance()
-//        // .getGlobalScheme
-//    }
+    private void updateBackgroundColors() {
+        // TODO update color when Editor theme changes
+        // We can do so by referring to EditorColorsManager.getInstance()
+        // .getGlobalScheme
+        EditorColorsScheme globalScheme = EditorColorsManager.getInstance().getGlobalScheme();
+        Color foreground = globalScheme.getDefaultForeground();
+        Color background = globalScheme.getDefaultBackground();
+        textPaneOurs.setForeground(foreground);
+        textPaneOurs.setBackground(background);
+        textPaneTheirs.setForeground(foreground);
+        textPaneTheirs.setBackground(background);
+    }
 
     public JPanel getContent() {
         return explanationsToolWindowContent;
@@ -127,18 +132,10 @@ public class ExplanationsToolWindow implements DumbAware {
 
         // Ours
         treeOurs = new JTree();
-        scrollPaneOursLeft = new JBScrollPane(treeOurs);
         treeOurs.setCellRenderer(new ConflictsTreeCellRenderer());
         treeOurs.addTreeSelectionListener(new ConflictsTreeSelectionListener(treeOurs, project));
 
-        // Theirs
-//        rootNode = new ConflictNode(ConflictNodeType.BRANCHROOT, ExplainMergeConflictBundle.message("toolwindow.label.theirs"));
-//        DefaultMutableTreeNode rootTheirs = ConflictsTreeUtils.createRootAndChildren(rootNode, file);
-//        DefaultTreeModel modelTheirs = new DefaultTreeModel(rootTheirs);
-//        treeTheirs = new JTree(modelTheirs);
-       treeTheirs = new JTree();
-        scrollPaneTheirsLeft = new JBScrollPane(treeTheirs);
-//        treeTheirs.setCellRenderer(new ConflictsTreeCellRenderer());
+        scrollPaneTree = new JBScrollPane(treeOurs);
     }
 
     /**
