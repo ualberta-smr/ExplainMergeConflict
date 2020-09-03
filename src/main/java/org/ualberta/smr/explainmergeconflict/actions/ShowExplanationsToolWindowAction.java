@@ -21,7 +21,7 @@ import java.awt.GridLayout;
 
 public class ShowExplanationsToolWindowAction extends AnAction {
     // TODO - temporary code for testing log UI functionality
-    public static TestWindow window;
+//    public static TestWindow window;
 
     @Override
     public void update(AnActionEvent e) {
@@ -37,9 +37,9 @@ public class ShowExplanationsToolWindowAction extends AnAction {
             UIController.updateToolWindowAfterAction(repo);
             VcsLogUi logUi = e.getData(VcsLogDataKeys.VCS_LOG_UI);
 
-            if (window == null) {
-                window = new TestWindow(e.getProject(), logUi, e.getData(CommonDataKeys.VIRTUAL_FILE));
-            }
+//            if (window == null) {
+//                window = new TestWindow(e.getProject(), logUi, e.getData(CommonDataKeys.VIRTUAL_FILE));
+//            }
         } else {
             showPopup(e.getDataContext());
         }
