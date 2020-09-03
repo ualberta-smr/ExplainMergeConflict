@@ -165,6 +165,7 @@ public class ConflictRegionHandler {
     private static List<Hash> getAllCommitIdsForRegionInFile(@NotNull Project project, @NotNull GitRepository repo,
                                                              @NotNull VirtualFile file, @NotNull String ref,
                                                              @NotNull Pair<Integer, Integer> pair) {
+        List<Hash> commitsIds = new ArrayList<>();
         try {
             /*
              * No logs would be recorded with these specific parameters when running GitHistoryUtils#history or
@@ -182,12 +183,13 @@ public class ConflictRegionHandler {
              * is still important information within a conflict region to consider when resolving merge conflicts.
              * Empty conflict regions also vary from a file to file basis depending on the types of changes made.
              */
+            String linesTest = pair.getFirst() + ",+" + pair.getSecond();
+            System.out.println("Running: git log -L" + linesTest + ":" + file.getPath() + " " + MergeConflictService.getBaseRevId() + ".." + ref);
             if (pair.getSecond() == 0) {
                 throw new ConflictRegionIsEmptyException();
             }
 
             lines = pair.getFirst() + ",+" + pair.getSecond();
-            List<Hash> commitsIds = new ArrayList<>();
             List<? extends TimedVcsCommit> commits = GitHistoryUtils.collectTimedCommits(
                     project,
                     repo.getRoot(),
@@ -199,14 +201,12 @@ public class ConflictRegionHandler {
             for (TimedVcsCommit commit: commits) {
                 commitsIds.add(commit.getId());
             }
-
-            return commitsIds;
         } catch (ConflictRegionIsEmptyException e) {
             // TODO - display this in GUI
             System.out.println("Conflict region for ref " + ref + " in file " + file.getPath() + " is empty. Unable to retrieve commit history for this file.");
         } catch (VcsException e) {
             e.printStackTrace();
         }
-        return null;
+        return commitsIds;
     }
 }

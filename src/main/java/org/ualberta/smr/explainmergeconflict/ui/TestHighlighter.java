@@ -55,7 +55,6 @@ public class TestHighlighter implements VcsLogHighlighter {
                 for (Hash hashId: commits) {
                     int index = myLogData.getCommitIndex(hashId, repo.getRoot());
                     if (index == commitId) return CONFLICT_STYLE;
-                    // TODO condition if not found?
                 }
             }
         }
@@ -82,31 +81,41 @@ public class TestHighlighter implements VcsLogHighlighter {
                 }
             }
         } else { // Otherwise just clear highlighting for now if viewing for all files
-            conflictsMap.clear();
+            clearCommitsToHighlight();
         }
     }
 
     private void updateCommitsToHighlight(Project project, VirtualFile file, VcsLogBranchFilter branchFilter) {
         // FIXME - running this in toolwindow
-        ConflictRegionHandler.registerConflictsForFile(project, repo, file);
+//        if (conflictsMap.isEmpty()) return;
 
+        ConflictRegionHandler.registerConflictsForFile(project, repo, file);
         HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
         ConflictFile conflictFile = conflictFiles.get(file.getPath());
         List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
 
         // If branch is not ALL
         if (branchFilter != null) {
-            if (branchFilter.matches(VcsLogUtil.HEAD) || branchFilter.matches(MergeConflictService.getHeadBranchName())) {
+            boolean isHeadFiltered = branchFilter.matches(VcsLogUtil.HEAD) || branchFilter.matches(
+                    MergeConflictService.getHeadBranchName()
+            );
+            boolean isMergeHeadFiltered = branchFilter.matches(MergeConflictService.getMergeBranchName());
+            if (isHeadFiltered && isMergeHeadFiltered) {
+                for (ConflictRegion conflictRegion : conflictRegions) {
+                    conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
+                    conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
+                }
+            }
+            else if (isHeadFiltered && !isMergeHeadFiltered) {
                 for (ConflictRegion conflictRegion: conflictRegions) {
                     conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
                 }
-            } else if (branchFilter.matches(MergeConflictService.getMergeBranchName())) {
-                for (ConflictRegion conflictRegion: conflictRegions) {
+            } else if (!isHeadFiltered && isMergeHeadFiltered) {
+                for (ConflictRegion conflictRegion : conflictRegions) {
                     conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
                 }
             } else {
-                // Clear highlighting for any other branch that is not head or merge_head
-                conflictsMap.clear();
+                clearCommitsToHighlight();
             }
         } else {
             // Otherwise just highlight all conflict commits for the time being
@@ -115,6 +124,10 @@ public class TestHighlighter implements VcsLogHighlighter {
                 conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
             }
         }
+    }
+
+    private void clearCommitsToHighlight() {
+        conflictsMap.clear();
     }
 
     /**
@@ -126,11 +139,10 @@ public class TestHighlighter implements VcsLogHighlighter {
     @Override
     public void update(@NotNull VcsLogDataPack dataPack, boolean refreshHappened) {
         System.out.println("update!");
-        // FIXME - using isEmpty as a condition to read conflicts won't work if we're changing filter to a new file
-//        if (conflictsMap.isEmpty()) {
-//
-//        }
-        readConflicts();
+        // FIXME - this will still be true after running abort because we don't wait for the repo to update
+        if (Utils.isInConflictState(repo) && myLogUi.isHighlighterEnabled(Factory.ID)) {
+            readConflicts();
+        }
         // TODO figure out when to clear conflictsMap
     }
 
