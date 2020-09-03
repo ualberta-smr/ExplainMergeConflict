@@ -44,6 +44,14 @@ public class TestHighlighter implements VcsLogHighlighter {
         // Highlight commits only if in merge conflict mode and enabled. Might require refresh though for main vcs log.
         shouldHighlightCommits = Utils.isInConflictState(repo) && myLogUi.isHighlighterEnabled(Factory.ID);
 
+        // TODO - this is just temporary for demo to highlight Alice's refactor change
+        VcsLogFilterCollection filters = myLogUi.getFilterUi().getFilters();
+        VcsLogStructureFilter structureFilter = filters.get(VcsLogFilterCollection.STRUCTURE_FILTER);
+        if (shouldHighlightCommits && structureFilter != null) {
+            CommitId id = myLogData.getCommitId(commitId);
+            if (id.getHash().toShortString().equals("38c05dc3")) return CONFLICT_STYLE;
+        }
+
         if (shouldHighlightCommits && !conflictsMap.isEmpty()) {
             Iterator iterator = conflictsMap.entrySet().iterator();
 
@@ -101,7 +109,6 @@ public class TestHighlighter implements VcsLogHighlighter {
                     MergeConflictService.getHeadBranchName()
             );
             boolean isMergeHeadFiltered = branchFilter.matches(MergeConflictService.getMergeBranchName());
-            System.out.println(isHeadFiltered + " " + isMergeHeadFiltered);
             if (isHeadFiltered && isMergeHeadFiltered) {
                 for (ConflictRegion conflictRegion : conflictRegions) {
                     List<Hash> commitIdsForBothBranches = new ArrayList<>(conflictRegion.getP1().getCommitsHistoryIds());

@@ -272,7 +272,7 @@ public final class MergeConflictService implements Disposable {
              * Empty conflict regions also vary from a file to file basis depending on the types of changes made.
              */
             String linesTest = pair.getFirst() + ",+" + pair.getSecond();
-            System.out.println("Running: git log -L" + linesTest + ":" + file.getPath() + " " + getBaseRevId() + ".." + ref);
+//            System.out.println("Running: git log -L" + linesTest + ":" + file.getPath() + " " + getBaseRevId() + ".." + ref);
             if (pair.getSecond() == 0) {
                 throw new ConflictRegionIsEmptyException();
             }
