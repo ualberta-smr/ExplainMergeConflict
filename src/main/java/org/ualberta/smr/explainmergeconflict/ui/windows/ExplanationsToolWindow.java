@@ -72,7 +72,6 @@ public class ExplanationsToolWindow implements DumbAware {
         // If viewing an actual conflict file, render all panels including the trees. Otherwise, remove it,
         if (Utils.isConflictFile(project, file)) {
             // TODO - find a way to only set regions if conflict regions are not registered!
-            ConflictRegionHandler.registerConflictsForFile(project, repo, file);
             setNewTreeModelForCurrentFile();
             bodyPanel.setVisible(true);
             textPaneHeader.setText("<NUMBER> conflict regions were found in file " + file.getName());

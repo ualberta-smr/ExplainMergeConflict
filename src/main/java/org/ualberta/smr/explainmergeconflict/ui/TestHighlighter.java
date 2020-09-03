@@ -89,13 +89,14 @@ public class TestHighlighter implements VcsLogHighlighter {
         // FIXME - running this in toolwindow
 //        if (conflictsMap.isEmpty()) return;
 
-        ConflictRegionHandler.registerConflictsForFile(project, repo, file);
+//        ConflictRegionHandler.registerConflictsForFile(project, repo, file);
         HashMap<String, ConflictFile> conflictFiles = MergeConflictService.getInstance(project).getConflictFiles();
         ConflictFile conflictFile = conflictFiles.get(file.getPath());
         List<ConflictRegion> conflictRegions = conflictFile.getConflictRegions();
 
         // If branch is not ALL
         if (branchFilter != null) {
+            // TODO improve going through conditions
             boolean isHeadFiltered = branchFilter.matches(VcsLogUtil.HEAD) || branchFilter.matches(
                     MergeConflictService.getHeadBranchName()
             );
@@ -114,14 +115,15 @@ public class TestHighlighter implements VcsLogHighlighter {
                 for (ConflictRegion conflictRegion : conflictRegions) {
                     conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
                 }
-            } else {
+            } else if (!isHeadFiltered && !isMergeHeadFiltered){
                 clearCommitsToHighlight();
             }
         } else {
             // Otherwise just highlight all conflict commits for the time being
             for (ConflictRegion conflictRegion: conflictRegions) {
-                conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
-                conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
+                List<Hash> commitIdsForBothBranches = new ArrayList<>(conflictRegion.getP1().getCommitsHistoryIds());
+                commitIdsForBothBranches.addAll(conflictRegion.getP2().getCommitsHistoryIds());
+                conflictsMap.put(conflictRegion, commitIdsForBothBranches);
             }
         }
     }
@@ -141,6 +143,7 @@ public class TestHighlighter implements VcsLogHighlighter {
         System.out.println("update!");
         // FIXME - this will still be true after running abort because we don't wait for the repo to update
         if (Utils.isInConflictState(repo) && myLogUi.isHighlighterEnabled(Factory.ID)) {
+            clearCommitsToHighlight();
             readConflicts();
         }
         // TODO figure out when to clear conflictsMap
