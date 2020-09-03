@@ -101,10 +101,12 @@ public class TestHighlighter implements VcsLogHighlighter {
                     MergeConflictService.getHeadBranchName()
             );
             boolean isMergeHeadFiltered = branchFilter.matches(MergeConflictService.getMergeBranchName());
+            System.out.println(isHeadFiltered + " " + isMergeHeadFiltered);
             if (isHeadFiltered && isMergeHeadFiltered) {
                 for (ConflictRegion conflictRegion : conflictRegions) {
-                    conflictsMap.put(conflictRegion, conflictRegion.getP1().getCommitsHistoryIds());
-                    conflictsMap.put(conflictRegion, conflictRegion.getP2().getCommitsHistoryIds());
+                    List<Hash> commitIdsForBothBranches = new ArrayList<>(conflictRegion.getP1().getCommitsHistoryIds());
+                    commitIdsForBothBranches.addAll(conflictRegion.getP2().getCommitsHistoryIds());
+                    conflictsMap.put(conflictRegion, commitIdsForBothBranches);
                 }
             }
             else if (isHeadFiltered && !isMergeHeadFiltered) {

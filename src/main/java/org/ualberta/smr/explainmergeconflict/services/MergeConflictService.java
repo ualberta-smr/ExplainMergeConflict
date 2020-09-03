@@ -161,7 +161,7 @@ public final class MergeConflictService implements Disposable {
      * @param file currently opened file
      */
     private static void runDiffForFileAndThenUpdate(@NotNull Project project, @NotNull GitRepository repo, @NotNull VirtualFile file) {
-        ProgressManager.getInstance().run(new Task.Modal(project, "explainmergeconflict: running git diff to detect conflict regions" + project.getName(), false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "explainmergeconflict: running git diff to detect conflict regions" + project.getName(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 /*
